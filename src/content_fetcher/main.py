@@ -13,8 +13,11 @@ def main():
     setup_logging()
 
     manager = ContentManager()
-    manager.add_provider("Plex", PlexProvider())
-    manager.add_provider("Trakt", TraktProvider())
+#    manager.add_provider("Plex", PlexProvider())
+    
+    print("Initializing Trakt provider. You may need to authorize the application.")
+    trakt_provider = TraktProvider()
+    manager.add_provider("Trakt", trakt_provider)
 
     all_watchlists = manager.get_all_watchlists()
 

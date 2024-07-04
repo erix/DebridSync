@@ -11,6 +11,7 @@ python = "^3.9"
 plexapi = "^4.13.2"
 trakt-py = "^4.4.0"
 python-dotenv = "^0.19.2"
+requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3.1"
