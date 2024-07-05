@@ -45,7 +45,7 @@ def main():
             if releases:
                 logger.info(f"Found {len(releases)} releases for {title}:")
                 for release in releases:
-                    logger.info(f"  - {release['title']} (Hash: {release['infoHash']})")
+                    logger.info(f"  - {release['title']} (Hash: {release['infoHash']}) (Size: {release['size_in_gb']}GB) (Peers: {release['peers']})")
             else:
                 logger.info(f"No releases found for {title}")
 

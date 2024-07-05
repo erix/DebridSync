@@ -136,7 +136,7 @@ class TestTorrentio(unittest.TestCase):
         # Test with MB
         result = torrentio._parse_title("TV.Show.S01E01.1080p.WEB-DL\n👤 30 💾 800 MB ⚙️ EZTV")
         self.assertEqual(result["title"], "TV.Show.S01E01.1080p.WEB-DL")
-        self.assertAlmostEqual(result["size_in_gb"], 0.78, places=2)  # Use assertAlmostEqual for float comparison
+        self.assertEqual(result["size_in_gb"], 0.78)
         self.assertEqual(result["peers"], 30)
 
         # Test with no additional info

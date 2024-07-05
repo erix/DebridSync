@@ -83,7 +83,7 @@ class TraktProvider(ContentProvider):
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
             watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
-            [ic(item.to_dict()) for item in watchlist]
+            #[ic(item.to_dict()) for item in watchlist]
 
             return [
                 {

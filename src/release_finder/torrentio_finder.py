@@ -66,7 +66,7 @@ class Torrentio(ReleaseFinder):
         if size_match:
             size = float(size_match.group(1))
             unit = size_match.group(2)
-            size_in_gb = size if unit == 'GB' else size / 1024
+            size_in_gb = size if unit == 'GB' else round(size / 1024, 2)
         
         peers = int(peers_match.group(1)) if peers_match else 0
         
