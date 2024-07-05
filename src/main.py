@@ -5,6 +5,7 @@ from content_fetcher.trakt_provider import TraktProvider
 from content_fetcher.content_manager import ContentManager
 from release_finder.torrentio_finder import Torrentio
 from release_finder.release_finder_manager import ReleaseFinderManager
+from models.filter import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ def main():
     release_finder_manager = ReleaseFinderManager()
     release_finder_manager.add_finder("Torrentio", Torrentio())
 
+    # Create a Filter object
+    release_filter = Filter(min_resolution='1080p', preferred_dynamic_range='HDR')
+
     # Find releases for each item in the watchlist
     for provider, watchlist in all_watchlists.items():
         logger.info(f"Finding releases for {provider} watchlist:")
@@ -43,8 +47,13 @@ def main():
             releases = release_finder_manager.find_releases("Torrentio", imdb_id, media_type)
 
             if releases:
-                logger.info(f"Found {len(releases)} releases for {title}:")
-                for release in releases:
+                logger.info(f"Found {len(releases)} releases for {title}")
+                
+                # Filter releases using the Filter object
+                filtered_releases = release_filter.apply(releases)
+                
+                logger.info(f"Filtered to {len(filtered_releases)} releases:")
+                for release in filtered_releases:
                     logger.info(f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers})")
             else:
                 logger.info(f"No releases found for {title}")
