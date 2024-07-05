@@ -12,6 +12,11 @@ class ReleaseFinder(ABC):
             media_type (Literal['movie', 'show']): The type of media, either 'movie' or 'show'.
 
         Returns:
-            List[Dict[str, str]]: A list of dictionaries containing release information.
+            List[Dict[str, Any]]: A list of dictionaries containing release information.
+            Each dictionary contains the following keys:
+                - title (str): The title of the release.
+                - infoHash (str): The info hash of the torrent.
+                - size_in_gb (float): The size of the release in gigabytes.
+                - peers (int): The number of peers for the release.
         """
         pass

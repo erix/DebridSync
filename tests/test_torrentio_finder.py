@@ -14,12 +14,12 @@ class TestTorrentio(unittest.TestCase):
             "streams": [
                 {
                     "name": "Torrentio\n4k DV | HDR10+",
-                    "title": "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC.DDP5.1.Atmos",
+                    "title": "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC.DDP5.1.Atmos\n👤 74 💾 30.4 GB ⚙️ TorrentGalaxy",
                     "infoHash": "1234567890abcdef1234567890abcdef12345678"
                 },
                 {
                     "name": "Torrentio\n1080p",
-                    "title": "Movie.Title.2024.1080p.WEB-DL.x264",
+                    "title": "Movie.Title.2024.1080p.WEB-DL.x264\n👤 50 💾 2.5 GB ⚙️ RARBG",
                     "infoHash": "abcdef1234567890abcdef1234567890abcdef12"
                 }
             ]
@@ -33,8 +33,12 @@ class TestTorrentio(unittest.TestCase):
         self.assertEqual(len(releases), 2)
         self.assertEqual(releases[0]["title"], "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC.DDP5.1.Atmos")
         self.assertEqual(releases[0]["infoHash"], "1234567890abcdef1234567890abcdef12345678")
+        self.assertEqual(releases[0]["size_in_gb"], 30.4)
+        self.assertEqual(releases[0]["peers"], 74)
         self.assertEqual(releases[1]["title"], "Movie.Title.2024.1080p.WEB-DL.x264")
         self.assertEqual(releases[1]["infoHash"], "abcdef1234567890abcdef1234567890abcdef12")
+        self.assertEqual(releases[1]["size_in_gb"], 2.5)
+        self.assertEqual(releases[1]["peers"], 50)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
@@ -49,7 +53,7 @@ class TestTorrentio(unittest.TestCase):
             "streams": [
                 {
                     "name": "Torrentio\n1080p",
-                    "title": "TV.Show.S01E01.1080p.WEB-DL.x264",
+                    "title": "TV.Show.S01E01.1080p.WEB-DL.x264\n👤 30 💾 800 MB ⚙️ EZTV",
                     "infoHash": "0123456789abcdef0123456789abcdef01234567"
                 }
             ]
@@ -63,6 +67,8 @@ class TestTorrentio(unittest.TestCase):
         self.assertEqual(len(releases), 1)
         self.assertEqual(releases[0]["title"], "TV.Show.S01E01.1080p.WEB-DL.x264")
         self.assertEqual(releases[0]["infoHash"], "0123456789abcdef0123456789abcdef01234567")
+        self.assertEqual(releases[0]["size_in_gb"], 0.78)  # 800 MB converted to GB
+        self.assertEqual(releases[0]["peers"], 30)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
@@ -86,6 +92,28 @@ class TestTorrentio(unittest.TestCase):
         # Test with an invalid media type
         with self.assertRaises(ValueError):
             self.torrentio.find_releases("tt1234567", "invalid_type")
+
+    def test_parse_title(self):
+        # Test the _parse_title method
+        torrentio = Torrentio()
+        
+        # Test with GB
+        result = torrentio._parse_title("Movie.Title.2024.2160p.DV.HDR10Plus.HEVC\n👤 74 💾 30.4 GB ⚙️ TorrentGalaxy")
+        self.assertEqual(result["title"], "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC")
+        self.assertEqual(result["size_in_gb"], 30.4)
+        self.assertEqual(result["peers"], 74)
+
+        # Test with MB
+        result = torrentio._parse_title("TV.Show.S01E01.1080p.WEB-DL\n👤 30 💾 800 MB ⚙️ EZTV")
+        self.assertEqual(result["title"], "TV.Show.S01E01.1080p.WEB-DL")
+        self.assertEqual(result["size_in_gb"], 0.78)
+        self.assertEqual(result["peers"], 30)
+
+        # Test with no additional info
+        result = torrentio._parse_title("Movie.Title.2024.1080p.WEB-DL.x264")
+        self.assertEqual(result["title"], "Movie.Title.2024.1080p.WEB-DL.x264")
+        self.assertEqual(result["size_in_gb"], 0)
+        self.assertEqual(result["peers"], 0)
 
 if __name__ == '__main__':
     unittest.main()
