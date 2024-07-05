@@ -1,10 +1,11 @@
 import requests
-from typing import List, Dict, Literal
+from typing import List, Literal
 import re
 from .release_finder import ReleaseFinder
+from models.release import Release
 
 class Torrentio(ReleaseFinder):
-    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Dict[str, str]]:
+    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Release]:
         """
         Find releases for a given IMDb ID and media type using Torrentio.
 
@@ -13,7 +14,7 @@ class Torrentio(ReleaseFinder):
             media_type (Literal['movie', 'show', 'episode']): The type of media, either 'movie', 'show', or 'episode'.
 
         Returns:
-            List[Dict[str, str]]: A list of dictionaries containing release information.
+            List[Release]: A list of Release objects containing release information.
 
         Raises:
             ValueError: If an invalid media_type is provided.
@@ -36,12 +37,12 @@ class Torrentio(ReleaseFinder):
         releases = []
         for stream in data.get('streams', []):
             parsed_title = self._parse_title(stream['title'])
-            release = {
-                'title': parsed_title['title'],
-                'infoHash': stream['infoHash'],
-                'size_in_gb': parsed_title['size_in_gb'],
-                'peers': parsed_title['peers']
-            }
+            release = Release(
+                title=parsed_title['title'],
+                infoHash=stream['infoHash'],
+                size_in_gb=parsed_title['size_in_gb'],
+                peers=parsed_title['peers']
+            )
             releases.append(release)
 
         return releases
