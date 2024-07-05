@@ -8,9 +8,12 @@ from threading import Condition
 
 from trakt import Trakt
 from trakt.core import exceptions
+from trakt.objects import Movie, Show
 
 from content_fetcher.content_provider import ContentProvider
 from content_fetcher.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
+
+from icecream import ic
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +71,8 @@ class TraktProvider(ContentProvider):
             with open(self.token_file, 'w') as f:
                 json.dump(self.authorization, f)
 
-            # Update the configuration with the new token
-            Trakt.configuration.oauth.from_response(self.authorization)
+            # Update the configuration with the new token. Refresh token if expired
+            Trakt.configuration.oauth.from_response(self.authorization, refresh=True)
 
         except exceptions.RequestFailedError as e:
             print(f"Error refreshing token: {e}")
@@ -77,23 +80,49 @@ class TraktProvider(ContentProvider):
             os.remove(self.token_file)
             self.device_auth()
 
-    def get_watchlist(self) -> List[str]:
+    def get_watchlist(self) -> List[Dict[str, str]]:
         try:
             watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
-            return [item.title for item in watchlist]
+            #[ic(item.to_dict()) for item in watchlist]
+
+            return [
+                {
+                    'title': item.title,
+                    'year': str(item.year) if item.year else '',
+                    'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
+                    'media_type': self._get_media_type(item)
+                }
+                for item in watchlist
+            ]
         except exceptions.RequestFailedError as e:
             if e.response.status_code == 401:  # Unauthorized, token might be expired
                 logger.info("Token expired. Refreshing...")
                 self.refresh_token()
                 # Retry after refreshing
                 watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
-                return [item.title for item in watchlist]
+                return [
+                    {
+                        'title': item.title,
+                        'year': str(item.year) if item.year else '',
+                        'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
+                        'media_type': self._get_media_type(item)
+                    }
+                    for item in watchlist
+                ]
             else:
                 logger.error(f"Error fetching Trakt watchlist: {e}")
                 return []
         except Exception as e:
             logger.error(f"Unexpected error fetching Trakt watchlist: {e}")
             return []
+
+    def _get_media_type(self, item):
+        if isinstance(item, Movie):
+            return 'movie'
+        elif isinstance(item, Show):
+            return 'show'
+        else:
+            return 'unknown'
 
     def on_aborted(self):
         """Device authentication aborted.
