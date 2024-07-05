@@ -19,20 +19,25 @@ class Torrentio(ReleaseFinder):
             ValueError: If an invalid media_type is provided.
         """
         if media_type not in ['movie', 'show']:
-            raise ValueError("Invalid media_type. Must be either 'movie' or 'show'.")
+            raise ValueError("Invalid media_type. Must be 'movie' or 'show'.")
 
-        url = f"https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/{media_type}/{imdb_id}.json"
+        base_url = "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/"
+        if media_type == 'movie':
+            url = f"{base_url}movie/{imdb_id}.json"
+        else:
+            url = f"{base_url}series/{imdb_id}:1:1.json"
+
         response = requests.get(url)
         data = response.json()
 
         releases = []
         for stream in data.get('streams', []):
-            parsed_info = self._parse_title(stream['title'])
+            parsed_title = self._parse_title(stream['title'])
             release = {
-                'title': parsed_info['title'],
+                'title': parsed_title['title'],
                 'infoHash': stream['infoHash'],
-                'size_in_gb': parsed_info['size_in_gb'],
-                'peers': parsed_info['peers']
+                'size_in_gb': parsed_title['size_in_gb'],
+                'peers': parsed_title['peers']
             }
             releases.append(release)
 
@@ -40,37 +45,43 @@ class Torrentio(ReleaseFinder):
 
     def _parse_title(self, title: str) -> Dict[str, any]:
         """
-        Parse the title string to extract additional information.
+        Parse the title string to extract size and peers information.
 
         Args:
-            title (str): The title string containing additional information.
+            title (str): The title string containing size and peers information.
 
         Returns:
-            Dict[str, any]: A dictionary containing parsed information.
+            Dict[str, any]: A dictionary containing the parsed information.
         """
-        # Split the title into main title and additional info
+        # Split the title into the actual title and the additional info
         parts = title.split('\n')
-        main_title = parts[0]
+        actual_title = parts[0]
         
         # Initialize default values
         size_in_gb = 0
         peers = 0
 
-        # Parse additional info if available
+        # If there's additional info, parse it
         if len(parts) > 1:
             info = parts[1]
+            
+            # Extract peers
+            peers_match = re.search(r'👤\s*(\d+)', info)
+            if peers_match:
+                peers = int(peers_match.group(1))
+            
+            # Extract size
             size_match = re.search(r'💾\s*([\d.]+)\s*(GB|MB)', info)
             if size_match:
                 size = float(size_match.group(1))
                 unit = size_match.group(2)
-                size_in_gb = size if unit == 'GB' else size / 1024
-
-            peers_match = re.search(r'👤\s*(\d+)', info)
-            if peers_match:
-                peers = int(peers_match.group(1))
+                if unit == 'GB':
+                    size_in_gb = size
+                elif unit == 'MB':
+                    size_in_gb = size / 1024
 
         return {
-            'title': main_title,
-            'size_in_gb': round(size_in_gb, 2),
+            'title': actual_title,
+            'size_in_gb': size_in_gb,
             'peers': peers
         }

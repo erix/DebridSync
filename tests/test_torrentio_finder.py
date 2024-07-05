@@ -67,12 +67,12 @@ class TestTorrentio(unittest.TestCase):
         self.assertEqual(len(releases), 1)
         self.assertEqual(releases[0]["title"], "TV.Show.S01E01.1080p.WEB-DL.x264")
         self.assertEqual(releases[0]["infoHash"], "0123456789abcdef0123456789abcdef01234567")
-        self.assertEqual(releases[0]["size_in_gb"], 0.78)  # 800 MB converted to GB
+        self.assertAlmostEqual(releases[0]["size_in_gb"], 0.78, places=2)  # Use assertAlmostEqual for float comparison
         self.assertEqual(releases[0]["peers"], 30)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
-            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/show/tt9876543.json"
+            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/series/tt9876543:1:1.json"
         )
 
     @patch('src.release_finder.torrentio_finder.requests.get')
@@ -106,7 +106,7 @@ class TestTorrentio(unittest.TestCase):
         # Test with MB
         result = torrentio._parse_title("TV.Show.S01E01.1080p.WEB-DL\n👤 30 💾 800 MB ⚙️ EZTV")
         self.assertEqual(result["title"], "TV.Show.S01E01.1080p.WEB-DL")
-        self.assertEqual(result["size_in_gb"], 0.78)
+        self.assertAlmostEqual(result["size_in_gb"], 0.78, places=2)  # Use assertAlmostEqual for float comparison
         self.assertEqual(result["peers"], 30)
 
         # Test with no additional info
