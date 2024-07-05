@@ -32,7 +32,7 @@ def main():
     release_finder_manager.add_finder("Torrentio", Torrentio())
 
     # Create a Filter object
-    release_filter = Filter(resolutions=['1080p'], preferred_dynamic_range='HDR')
+    release_filter = Filter(resolutions=['2160p'])
 
     # Find releases for each item in the watchlist
     for provider, watchlist in all_watchlists.items():
