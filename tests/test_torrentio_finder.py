@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from src.release_finder.torrentio_finder import Torrentio
+from src.models.release import Release
 
 class TestTorrentio(unittest.TestCase):
     def setUp(self):
@@ -31,14 +32,14 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert the results
         self.assertEqual(len(releases), 2)
-        self.assertEqual(releases[0]["title"], "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC.DDP5.1.Atmos")
-        self.assertEqual(releases[0]["infoHash"], "1234567890abcdef1234567890abcdef12345678")
-        self.assertEqual(releases[0]["size_in_gb"], 30.4)
-        self.assertEqual(releases[0]["peers"], 74)
-        self.assertEqual(releases[1]["title"], "Movie.Title.2024.1080p.WEB-DL.x264")
-        self.assertEqual(releases[1]["infoHash"], "abcdef1234567890abcdef1234567890abcdef12")
-        self.assertEqual(releases[1]["size_in_gb"], 2.5)
-        self.assertEqual(releases[1]["peers"], 50)
+        self.assertEqual(releases[0].title, "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC.DDP5.1.Atmos")
+        self.assertEqual(releases[0].infoHash, "1234567890abcdef1234567890abcdef12345678")
+        self.assertEqual(releases[0].size_in_gb, 30.4)
+        self.assertEqual(releases[0].peers, 74)
+        self.assertEqual(releases[1].title, "Movie.Title.2024.1080p.WEB-DL.x264")
+        self.assertEqual(releases[1].infoHash, "abcdef1234567890abcdef1234567890abcdef12")
+        self.assertEqual(releases[1].size_in_gb, 2.5)
+        self.assertEqual(releases[1].peers, 50)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
@@ -65,10 +66,10 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert the results
         self.assertEqual(len(releases), 1)
-        self.assertEqual(releases[0]["title"], "TV.Show.S01E01.1080p.WEB-DL.x264")
-        self.assertEqual(releases[0]["infoHash"], "0123456789abcdef0123456789abcdef01234567")
-        self.assertAlmostEqual(releases[0]["size_in_gb"], 0.78, places=2)  # Use assertAlmostEqual for float comparison
-        self.assertEqual(releases[0]["peers"], 30)
+        self.assertEqual(releases[0].title, "TV.Show.S01E01.1080p.WEB-DL.x264")
+        self.assertEqual(releases[0].infoHash, "0123456789abcdef0123456789abcdef01234567")
+        self.assertAlmostEqual(releases[0].size_in_gb, 0.78, places=2)  # Use assertAlmostEqual for float comparison
+        self.assertEqual(releases[0].peers, 30)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
@@ -95,10 +96,10 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert the results
         self.assertEqual(len(releases), 1)
-        self.assertEqual(releases[0]["title"], "TV.Show.S01E02.1080p.WEB-DL.x264")
-        self.assertEqual(releases[0]["infoHash"], "fedcba9876543210fedcba9876543210fedcba98")
-        self.assertAlmostEqual(releases[0]["size_in_gb"], 0.73, places=2)  # Use assertAlmostEqual for float comparison
-        self.assertEqual(releases[0]["peers"], 25)
+        self.assertEqual(releases[0].title, "TV.Show.S01E02.1080p.WEB-DL.x264")
+        self.assertEqual(releases[0].infoHash, "fedcba9876543210fedcba9876543210fedcba98")
+        self.assertAlmostEqual(releases[0].size_in_gb, 0.73, places=2)  # Use assertAlmostEqual for float comparison
+        self.assertEqual(releases[0].peers, 25)
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
