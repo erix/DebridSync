@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Literal
+from typing import List, Literal
+from models.release import Release
 
 class ReleaseFinder(ABC):
     @abstractmethod
-    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Dict[str, str]]:
+    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Release]:
         """
         Find releases for a given IMDb ID and media type.
 
@@ -12,11 +13,6 @@ class ReleaseFinder(ABC):
             media_type (Literal['movie', 'show', 'episode']): The type of media, either 'movie', 'show', or 'episode'.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries containing release information.
-            Each dictionary contains the following keys:
-                - title (str): The title of the release.
-                - infoHash (str): The info hash of the torrent.
-                - size_in_gb (float): The size of the release in gigabytes.
-                - peers (int): The number of peers for the release.
+            List[Release]: A list of Release objects containing release information.
         """
         pass
