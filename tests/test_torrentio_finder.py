@@ -76,6 +76,36 @@ class TestTorrentio(unittest.TestCase):
         )
 
     @patch('src.release_finder.torrentio_finder.requests.get')
+    def test_find_releases_episode(self, mock_get):
+        # Mock the API response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "streams": [
+                {
+                    "name": "Torrentio\n1080p",
+                    "title": "TV.Show.S01E02.1080p.WEB-DL.x264\n👤 25 💾 750 MB ⚙️ EZTV",
+                    "infoHash": "fedcba9876543210fedcba9876543210fedcba98"
+                }
+            ]
+        }
+        mock_get.return_value = mock_response
+
+        # Test the find_releases method
+        releases = self.torrentio.find_releases("tt9876543", "episode")
+
+        # Assert the results
+        self.assertEqual(len(releases), 1)
+        self.assertEqual(releases[0]["title"], "TV.Show.S01E02.1080p.WEB-DL.x264")
+        self.assertEqual(releases[0]["infoHash"], "fedcba9876543210fedcba9876543210fedcba98")
+        self.assertAlmostEqual(releases[0]["size_in_gb"], 0.73, places=2)  # Use assertAlmostEqual for float comparison
+        self.assertEqual(releases[0]["peers"], 25)
+
+        # Assert that the correct URL was called
+        mock_get.assert_called_once_with(
+            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/series/tt9876543.json"
+        )
+
+    @patch('src.release_finder.torrentio_finder.requests.get')
     def test_find_releases_no_results(self, mock_get):
         # Mock an empty API response
         mock_response = Mock()

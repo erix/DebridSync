@@ -8,7 +8,7 @@ from threading import Condition
 
 from trakt import Trakt
 from trakt.core import exceptions
-from trakt.objects import Movie, Show
+from trakt.objects import Movie, Show, Episode
 
 from content_fetcher.content_provider import ContentProvider
 from content_fetcher.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
@@ -83,12 +83,12 @@ class TraktProvider(ContentProvider):
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
             watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
-            #[ic(item.to_dict()) for item in watchlist]
+            [ic(item.to_dict()) for item in watchlist]
 
             return [
                 {
                     'title': item.title,
-                    'year': str(item.year) if item.year else '',
+                    'year': str(item.year) if hasattr(item, 'year') else '',
                     'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
                     'media_type': self._get_media_type(item)
                 }
@@ -103,7 +103,7 @@ class TraktProvider(ContentProvider):
                 return [
                     {
                         'title': item.title,
-                        'year': str(item.year) if item.year else '',
+                        'year': str(item.year) if hasattr(item, 'year') else '',
                         'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
                         'media_type': self._get_media_type(item)
                     }
@@ -121,6 +121,8 @@ class TraktProvider(ContentProvider):
             return 'movie'
         elif isinstance(item, Show):
             return 'show'
+        elif isinstance(item, Episode):
+            return 'episode'
         else:
             return 'unknown'
 

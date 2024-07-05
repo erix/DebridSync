@@ -1,16 +1,16 @@
 import requests
 from typing import List, Dict, Literal
-from .release_finder import ReleaseFinder
 import re
+from .release_finder import ReleaseFinder
 
 class Torrentio(ReleaseFinder):
-    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show']) -> List[Dict[str, str]]:
+    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Dict[str, str]]:
         """
         Find releases for a given IMDb ID and media type using Torrentio.
 
         Args:
-            imdb_id (str): The IMDb ID of the movie or TV show.
-            media_type (Literal['movie', 'show']): The type of media, either 'movie' or 'show'.
+            imdb_id (str): The IMDb ID of the movie, TV show, or episode.
+            media_type (Literal['movie', 'show', 'episode']): The type of media, either 'movie', 'show', or 'episode'.
 
         Returns:
             List[Dict[str, str]]: A list of dictionaries containing release information.
@@ -18,14 +18,17 @@ class Torrentio(ReleaseFinder):
         Raises:
             ValueError: If an invalid media_type is provided.
         """
-        if media_type not in ['movie', 'show']:
-            raise ValueError("Invalid media_type. Must be 'movie' or 'show'.")
+        if media_type not in ['movie', 'show', 'episode']:
+            raise ValueError("Invalid media_type. Must be 'movie', 'show', or 'episode'.")
 
         base_url = "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/"
+        
         if media_type == 'movie':
             url = f"{base_url}movie/{imdb_id}.json"
-        else:
+        elif media_type == 'show':
             url = f"{base_url}series/{imdb_id}:1:1.json"
+        else:  # episode
+            url = f"{base_url}series/{imdb_id}.json"
 
         response = requests.get(url)
         data = response.json()
@@ -53,35 +56,22 @@ class Torrentio(ReleaseFinder):
         Returns:
             Dict[str, any]: A dictionary containing the parsed information.
         """
-        # Split the title into the actual title and the additional info
         parts = title.split('\n')
-        actual_title = parts[0]
+        parsed_title = parts[0] if parts else title
         
-        # Initialize default values
+        size_match = re.search(r'💾\s*([\d.]+)\s*(GB|MB)', title)
+        peers_match = re.search(r'👤\s*(\d+)', title)
+        
         size_in_gb = 0
-        peers = 0
-
-        # If there's additional info, parse it
-        if len(parts) > 1:
-            info = parts[1]
-            
-            # Extract peers
-            peers_match = re.search(r'👤\s*(\d+)', info)
-            if peers_match:
-                peers = int(peers_match.group(1))
-            
-            # Extract size
-            size_match = re.search(r'💾\s*([\d.]+)\s*(GB|MB)', info)
-            if size_match:
-                size = float(size_match.group(1))
-                unit = size_match.group(2)
-                if unit == 'GB':
-                    size_in_gb = size
-                elif unit == 'MB':
-                    size_in_gb = size / 1024
-
+        if size_match:
+            size = float(size_match.group(1))
+            unit = size_match.group(2)
+            size_in_gb = size if unit == 'GB' else size / 1024
+        
+        peers = int(peers_match.group(1)) if peers_match else 0
+        
         return {
-            'title': actual_title,
+            'title': parsed_title,
             'size_in_gb': size_in_gb,
             'peers': peers
         }

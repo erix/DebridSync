@@ -51,7 +51,7 @@ def test_get_media_type():
 
     episode_item = MagicMock()
     episode_item.__class__.__name__ = 'Episode'
-    assert provider._get_media_type(episode_item) == 'show'
+    assert provider._get_media_type(episode_item) == 'episode'
 
     season_item = MagicMock()
     season_item.__class__.__name__ = 'Season'
