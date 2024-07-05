@@ -1,5 +1,5 @@
 import requests
-from typing import List, Literal
+from typing import List, Literal, Dict, Any
 import re
 from .release_finder import ReleaseFinder
 from models.release import Release
@@ -47,7 +47,7 @@ class Torrentio(ReleaseFinder):
 
         return releases
 
-    def _parse_title(self, title: str) -> Dict[str, any]:
+    def _parse_title(self, title: str) -> Dict[str, Any]:
         """
         Parse the title string to extract size and peers information.
 
