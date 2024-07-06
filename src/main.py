@@ -3,8 +3,10 @@ import os
 
 import yaml
 from content_fetcher.content_manager import ContentManager
+from content_fetcher.collection_manager import CollectionManager
 from content_fetcher.plex_provider import PlexProvider
 from content_fetcher.trakt_provider import TraktProvider
+from content_fetcher.media_collection_provider import MediaCollectionProvider
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from models.quality_profile import QualityProfile
@@ -41,7 +43,8 @@ def setup_logging(config):
 
 
 def initialize_content_providers(config, env_vars):
-    manager = ContentManager()
+    content_manager = ContentManager()
+    collection_manager = CollectionManager()
     content_providers = config.get("content_providers", {})
     for provider, settings in content_providers.items():
         if settings.get("enabled", False):
@@ -50,13 +53,15 @@ def initialize_content_providers(config, env_vars):
                     client_id=env_vars["TRAKT_CLIENT_ID"],
                     client_secret=env_vars["TRAKT_CLIENT_SECRET"],
                 )
-                manager.add_provider("Trakt", trakt_provider)
+                content_manager.add_provider("Trakt", trakt_provider)
+                collection_manager.add_provider("Trakt", trakt_provider)
             elif provider == "plex":
                 plex_provider = PlexProvider(
                     username=settings["username"], password=settings["password"]
                 )
-                manager.add_provider("Plex", plex_provider)
-    return manager
+                content_manager.add_provider("Plex", plex_provider)
+                collection_manager.add_provider("Plex", plex_provider)
+    return content_manager, collection_manager
 
 
 def initialize_release_finders(config):
@@ -77,11 +82,19 @@ def process_watchlist_item(
     dry_run,
     remove_after_adding,
     content_provider,
+    user_collection,
 ):
     imdb_id = item["imdb_id"]
     media_type = item["media_type"]
     title = item["title"]
     year = item.get("year", "N/A")
+
+    # Check if the item is already in the user's collection
+    if any(
+        id == imdb_id for key, id in user_collection
+    ):
+        logger.info(f"Skipping {title} ({year}) - Already in collection")
+        return
 
     logger.info(f"Searching for releases: {title} ({year}) - {media_type}")
     releases = release_finder_manager.find_releases("Torrentio", imdb_id, media_type)
@@ -95,7 +108,7 @@ def process_watchlist_item(
             logger.info(
                 f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers})"
             )
-            success = add_torrent_to_real_debrid(release, real_debrid, True)
+            success = add_torrent_to_real_debrid(release, real_debrid, dry_run)
             if success and remove_after_adding and not dry_run:
                 content_provider.remove_from_watchlist(item)
                 logger.info(f"Removed {title} from watchlist")
@@ -140,7 +153,7 @@ def main():
             "Running in dry run mode. No changes will be made to Real-Debrid or watchlists."
         )
 
-    content_manager = initialize_content_providers(config, env_vars)
+    content_manager, collection_manager = initialize_content_providers(config, env_vars)
     release_finder_manager = initialize_release_finders(config)
     quality_profile = QualityProfile(
         resolutions=config["quality_profile"]["resolutions"]
@@ -155,9 +168,15 @@ def main():
 
     all_watchlists = content_manager.get_all_watchlists()
     ic(all_watchlists.items())
+
+    # Fetch user collections
+    user_collections = collection_manager.get_user_collections()
+    # ic(user_collections)
+
     for provider, watchlist in all_watchlists.items():
         logger.info(f"Finding releases for {provider} watchlist:")
         content_provider = content_manager.get_provider(provider)
+        user_collection = user_collections.get(provider, [])
         for item in watchlist:
             process_watchlist_item(
                 item,
@@ -167,6 +186,7 @@ def main():
                 dry_run,
                 remove_after_adding,
                 content_provider,
+                user_collection,
             )
 
 

@@ -1,13 +1,13 @@
 from typing import Dict, List
 
-from content_fetcher.content_provider import ContentProvider
+from content_fetcher.media_collection_provider import MediaCollectionProvider
 
 
 class ContentManager:
     def __init__(self):
-        self.providers: Dict[str, ContentProvider] = {}
+        self.providers: Dict[str, MediaCollectionProvider] = {}
 
-    def add_provider(self, name: str, provider: ContentProvider):
+    def add_provider(self, name: str, provider: MediaCollectionProvider):
         self.providers[name] = provider
 
     def get_watchlist(self, provider_name: str) -> List[str]:
@@ -22,7 +22,7 @@ class ContentManager:
             name: provider.get_watchlist() for name, provider in self.providers.items()
         }
 
-    def get_provider(self, name: str) -> ContentProvider:
+    def get_provider(self, name: str) -> MediaCollectionProvider:
         """
         Get a content provider by name.
 

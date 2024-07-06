@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from threading import Condition
 
 from trakt import Trakt
@@ -11,13 +11,16 @@ from trakt.core import exceptions
 from trakt.objects import Movie, Show, Episode
 
 from content_fetcher.content_provider import ContentProvider
+from content_fetcher.media_collection_provider import MediaCollectionProvider
 from content_fetcher.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
+
+from icecream import ic
 
 
 logger = logging.getLogger(__name__)
 
 
-class TraktProvider(ContentProvider):
+class TraktProvider(ContentProvider, MediaCollectionProvider):
     def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
@@ -95,6 +98,7 @@ class TraktProvider(ContentProvider):
         try:
             logger.info("Getting watchlist for erix...")
             watchlist = Trakt["users/*/watchlist"].get(username="erix", extended="full")
+
             return [
                 {
                     "title": item.title,
@@ -131,11 +135,13 @@ class TraktProvider(ContentProvider):
             return []
 
     def _get_media_type(self, item):
-        if isinstance(item, Movie) or (hasattr(item, 'type') and item.type == 'movie'):
+        if isinstance(item, Movie) or (hasattr(item, "type") and item.type == "movie"):
             return "movie"
-        elif isinstance(item, Show) or (hasattr(item, 'type') and item.type == 'show'):
+        elif isinstance(item, Show) or (hasattr(item, "type") and item.type == "show"):
             return "show"
-        elif isinstance(item, Episode) or (hasattr(item, 'type') and item.type == 'episode'):
+        elif isinstance(item, Episode) or (
+            hasattr(item, "type") and item.type == "episode"
+        ):
             return "episode"
         else:
             return "unknown"
@@ -165,6 +171,27 @@ class TraktProvider(ContentProvider):
         except exceptions.RequestException as e:
             logger.error(f"Error removing item from Trakt watchlist: {e}")
             return False
+
+    def get_user_collection(self) -> List[Dict[str, str]]:
+        try:
+            logger.info("Getting user collection...")
+            movies = Trakt["sync/collection"].movies(extended="full")
+            shows = Trakt["sync/collection"].shows(extended="full")
+            # ic(movies)
+            collection = []
+            for item in movies:
+                collection.append(item)
+
+            for item in shows:
+                collection.append(item)
+            return collection
+
+        except exceptions.RequestFailedError as e:
+            logger.error(f"Error fetching Trakt user collection: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error fetching Trakt user collection: {e}")
+            return []
 
     def _on_aborted(self):
         """Device authentication aborted.
