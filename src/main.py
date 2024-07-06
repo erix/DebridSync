@@ -45,23 +45,34 @@ def main():
         logger.info("Running in dry run mode. No changes will be made to Real-Debrid.")
 
     manager = ContentManager()
-    #    manager.add_provider("Plex", PlexProvider(username=config['plex']['username'], password=config['plex']['password']))
 
-    print("Initializing Trakt provider. You may need to authorize the application.")
-    trakt_provider = TraktProvider(
-        client_id=env_vars["TRAKT_CLIENT_ID"],
-        client_secret=env_vars["TRAKT_CLIENT_SECRET"],
-    )
-    manager.add_provider("Trakt", trakt_provider)
+    # Initialize content providers based on configuration
+    content_providers = config.get('content_providers', {})
+    for provider, settings in content_providers.items():
+        if settings.get('enabled', False):
+            if provider == 'trakt':
+                print("Initializing Trakt provider. You may need to authorize the application.")
+                trakt_provider = TraktProvider(
+                    client_id=env_vars["TRAKT_CLIENT_ID"],
+                    client_secret=env_vars["TRAKT_CLIENT_SECRET"],
+                )
+                manager.add_provider("Trakt", trakt_provider)
+            elif provider == 'plex':
+                plex_provider = PlexProvider(username=settings['username'], password=settings['password'])
+                manager.add_provider("Plex", plex_provider)
 
     all_watchlists = manager.get_all_watchlists()
 
     for provider, watchlist in all_watchlists.items():
         logger.info(f"{provider} watchlist: {watchlist}")
 
-    # Initialize ReleaseFinderManager and add Torrentio finder
+    # Initialize ReleaseFinderManager and add enabled finders
     release_finder_manager = ReleaseFinderManager()
-    release_finder_manager.add_finder("Torrentio", Torrentio())
+    release_finders = config.get('release_finders', {})
+    for finder, settings in release_finders.items():
+        if settings.get('enabled', False):
+            if finder == 'torrentio':
+                release_finder_manager.add_finder("Torrentio", Torrentio())
 
     # Create a QualityProfile object
     quality_profile = QualityProfile(
