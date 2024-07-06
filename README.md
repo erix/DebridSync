@@ -18,16 +18,20 @@ The application uses a YAML configuration file (`config.yml`) and environment va
 
 ```yaml
 # Content Providers
-trakt:
-  # Trakt client ID and secret are loaded from .env file
+content_providers:
+  trakt:
+    enabled: true
+    # Trakt client ID and secret are loaded from .env file
+  plex:
+    enabled: false
+    username: your_plex_username
+    password: your_plex_password
 
-plex:
-  username: your_plex_username
-  password: your_plex_password
-
-# Release Finder
-torrentio:
-  # Add any Torrentio-specific settings here if needed
+# Release Finders
+release_finders:
+  torrentio:
+    enabled: true
+    # Add any Torrentio-specific settings here if needed
 
 # Real-Debrid
 real_debrid:
