@@ -26,11 +26,11 @@ class TraktProvider(ContentProvider):
         self.is_authenticating = Condition()
 
         # Bind trakt events
-        Trakt.on("oauth.token_refreshed", self.on_token_refreshed)
+        Trakt.on("oauth.token_refreshed", self._on_token_refreshed)
 
-        self.configure_trakt()
+        self._configure_trakt()
 
-    def configure_trakt(self):
+    def _configure_trakt(self):
         Trakt.configuration.defaults.client(
             id=self.client_id, secret=self.client_secret
         )
@@ -40,9 +40,9 @@ class TraktProvider(ContentProvider):
                 self.authorization = json.load(f)
             Trakt.configuration.defaults.oauth.from_response(self.authorization)
         else:
-            self.device_auth()
+            self._device_auth()
 
-    def device_auth(self):
+    def _device_auth(self):
         if not self.is_authenticating.acquire(blocking=False):
             print("Authentication has already been started")
             return False
@@ -58,10 +58,10 @@ class TraktProvider(ContentProvider):
         poller = (
             Trakt["oauth/device"]
             .poll(**code)
-            .on("aborted", self.on_aborted)
-            .on("authenticated", self.on_authenticated)
-            .on("expired", self.on_expired)
-            .on("poll", self.on_poll)
+            .on("aborted", self._on_aborted)
+            .on("authenticated", self._on_authenticated)
+            .on("expired", self._on_expired)
+            .on("poll", self._on_poll)
         )
 
         # Start polling for authentication token
@@ -70,7 +70,7 @@ class TraktProvider(ContentProvider):
         # Wait for authentication to complete
         return self.is_authenticating.wait()
 
-    def refresh_token(self):
+    def _refresh_token(self):
         try:
             self.authorization = Trakt["oauth"].token_refresh(
                 refresh_token=self.authorization["refresh_token"]
@@ -89,7 +89,7 @@ class TraktProvider(ContentProvider):
             print(f"Error refreshing token: {e}")
             # If refresh fails, we might need to re-authenticate
             os.remove(self.token_file)
-            self.device_auth()
+            self._device_auth()
 
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
@@ -107,7 +107,7 @@ class TraktProvider(ContentProvider):
         except exceptions.RequestFailedError as e:
             if e.response.status_code == 401:  # Unauthorized, token might be expired
                 logger.info("Token expired. Refreshing...")
-                self.refresh_token()
+                self._refresh_token()
                 # Retry after refreshing
                 watchlist = Trakt["users/*/watchlist"].get(
                     username="erix", extended="full"
@@ -131,11 +131,11 @@ class TraktProvider(ContentProvider):
             return []
 
     def _get_media_type(self, item):
-        if isinstance(item, Movie):
+        if isinstance(item, Movie) or (hasattr(item, 'type') and item.type == 'movie'):
             return "movie"
-        elif isinstance(item, Show):
+        elif isinstance(item, Show) or (hasattr(item, 'type') and item.type == 'show'):
             return "show"
-        elif isinstance(item, Episode):
+        elif isinstance(item, Episode) or (hasattr(item, 'type') and item.type == 'episode'):
             return "episode"
         else:
             return "unknown"
@@ -166,7 +166,7 @@ class TraktProvider(ContentProvider):
             logger.error(f"Error removing item from Trakt watchlist: {e}")
             return False
 
-    def on_aborted(self):
+    def _on_aborted(self):
         """Device authentication aborted.
 
         Triggered when device authentication was aborted (either with `DeviceOAuthPoller.stop()`
@@ -180,7 +180,7 @@ class TraktProvider(ContentProvider):
         self.is_authenticating.notify_all()
         self.is_authenticating.release()
 
-    def on_authenticated(self, authorization):
+    def _on_authenticated(self, authorization):
         """Device authenticated.
 
         :param authorization: Authentication token details
@@ -198,9 +198,9 @@ class TraktProvider(ContentProvider):
         # Authentication complete
         self.is_authenticating.notify_all()
         self.is_authenticating.release()
-        self.save_token()
+        self._save_token()
 
-    def on_expired(self):
+    def _on_expired(self):
         """Device authentication expired."""
 
         print("Authentication expired")
@@ -210,7 +210,7 @@ class TraktProvider(ContentProvider):
         self.is_authenticating.notify_all()
         self.is_authenticating.release()
 
-    def on_poll(self, callback):
+    def _on_poll(self, callback):
         """Device authentication poll.
 
         :param callback: Call with `True` to continue polling, or `False` to abort polling
@@ -220,12 +220,12 @@ class TraktProvider(ContentProvider):
         # Continue polling
         callback(True)
 
-    def on_token_refreshed(self, authorization):
+    def _on_token_refreshed(self, authorization):
         # OAuth token refreshed, store authorization for future calls
         self.authorization = authorization
 
         print("Token refreshed - authorization: %r" % self.authorization)
 
-    def save_token(self):
+    def _save_token(self):
         with open(self.token_file, "w") as f:
             json.dump(self.authorization, f)
