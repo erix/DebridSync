@@ -13,49 +13,56 @@ from trakt.objects import Movie, Show, Episode
 from content_fetcher.content_provider import ContentProvider
 from content_fetcher.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
 
-from icecream import ic
 
 logger = logging.getLogger(__name__)
+
 
 class TraktProvider(ContentProvider):
     def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.token_file = 'trakt_token.json'
+        self.token_file = "trakt_token.json"
 
         self.is_authenticating = Condition()
 
         # Bind trakt events
-        Trakt.on('oauth.token_refreshed', self.on_token_refreshed)
+        Trakt.on("oauth.token_refreshed", self.on_token_refreshed)
 
         self.configure_trakt()
 
     def configure_trakt(self):
-        Trakt.configuration.defaults.client(id=self.client_id, secret=self.client_secret)
+        Trakt.configuration.defaults.client(
+            id=self.client_id, secret=self.client_secret
+        )
 
         if os.path.exists(self.token_file):
-            with open(self.token_file, 'r') as f:
+            with open(self.token_file, "r") as f:
                 self.authorization = json.load(f)
-            Trakt.configuration.oauth.from_response(self.authorization)
+            Trakt.configuration.defaults.oauth.from_response(self.authorization)
         else:
             self.device_auth()
 
     def device_auth(self):
         if not self.is_authenticating.acquire(blocking=False):
-            print('Authentication has already been started')
+            print("Authentication has already been started")
             return False
 
         # Request new device code
-        code = Trakt['oauth/device'].code()
+        code = Trakt["oauth/device"].code()
 
-        print(f"Please go to {code['verification_url']} and enter the code: {code['user_code']}")
+        print(
+            f"Please go to {code['verification_url']} and enter the code: {code['user_code']}"
+        )
 
         # Construct device authentication poller
-        poller = Trakt['oauth/device'].poll(**code)\
-            .on('aborted', self.on_aborted)\
-            .on('authenticated', self.on_authenticated)\
-            .on('expired', self.on_expired)\
-            .on('poll', self.on_poll)
+        poller = (
+            Trakt["oauth/device"]
+            .poll(**code)
+            .on("aborted", self.on_aborted)
+            .on("authenticated", self.on_authenticated)
+            .on("expired", self.on_expired)
+            .on("poll", self.on_poll)
+        )
 
         # Start polling for authentication token
         poller.start(daemon=False)
@@ -65,14 +72,18 @@ class TraktProvider(ContentProvider):
 
     def refresh_token(self):
         try:
-            self.authorization = Trakt['oauth'].token_refresh(refresh_token=self.authorization['refresh_token'])
-            
+            self.authorization = Trakt["oauth"].token_refresh(
+                refresh_token=self.authorization["refresh_token"]
+            )
+
             # Save the new token
-            with open(self.token_file, 'w') as f:
+            with open(self.token_file, "w") as f:
                 json.dump(self.authorization, f)
 
             # Update the configuration with the new token. Refresh token if expired
-            Trakt.configuration.oauth.from_response(self.authorization, refresh=True)
+            Trakt.configuration.defaults.oauth.from_response(
+                self.authorization, refresh=True
+            )
 
         except exceptions.RequestFailedError as e:
             print(f"Error refreshing token: {e}")
@@ -82,15 +93,14 @@ class TraktProvider(ContentProvider):
 
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
-            watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
-            #[ic(item.to_dict()) for item in watchlist]
-
+            logger.info("Getting watchlist for erix...")
+            watchlist = Trakt["users/*/watchlist"].get(username="erix", extended="full")
             return [
                 {
-                    'title': item.title,
-                    'year': str(item.year) if hasattr(item, 'year') else '',
-                    'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
-                    'media_type': self._get_media_type(item)
+                    "title": item.title,
+                    "year": str(item.year) if hasattr(item, "year") else "",
+                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    "media_type": self._get_media_type(item),
                 }
                 for item in watchlist
             ]
@@ -99,13 +109,17 @@ class TraktProvider(ContentProvider):
                 logger.info("Token expired. Refreshing...")
                 self.refresh_token()
                 # Retry after refreshing
-                watchlist = Trakt['users/*/watchlist'].get(username='erix', extended='full')
+                watchlist = Trakt["users/*/watchlist"].get(
+                    username="erix", extended="full"
+                )
                 return [
                     {
-                        'title': item.title,
-                        'year': str(item.year) if hasattr(item, 'year') else '',
-                        'imdb_id': item.get_key('imdb') if hasattr(item, 'get_key') else '',
-                        'media_type': self._get_media_type(item)
+                        "title": item.title,
+                        "year": str(item.year) if hasattr(item, "year") else "",
+                        "imdb_id": item.get_key("imdb")
+                        if hasattr(item, "get_key")
+                        else "",
+                        "media_type": self._get_media_type(item),
                     }
                     for item in watchlist
                 ]
@@ -118,13 +132,39 @@ class TraktProvider(ContentProvider):
 
     def _get_media_type(self, item):
         if isinstance(item, Movie):
-            return 'movie'
+            return "movie"
         elif isinstance(item, Show):
-            return 'show'
+            return "show"
         elif isinstance(item, Episode):
-            return 'episode'
+            return "episode"
         else:
-            return 'unknown'
+            return "unknown"
+
+    def remove_from_watchlist(self, item: Dict[str, str]) -> bool:
+        logger.info(f"Log level is {logging.getLevelName(logger.getEffectiveLevel())}")
+        try:
+            # Assuming the item dictionary contains 'imdb_id' and 'media_type'
+            imdb_id = item["imdb_id"]
+            media_type = item["media_type"]
+
+            if media_type == "movie":
+                logger.debug(f"Delete movie from watchlist:{item['title']}")
+                print(
+                    Trakt["sync/watchlist"].remove(
+                        {"movies": [{"ids": {"imdb": imdb_id}}]}
+                    )
+                )
+            elif media_type in ["show", "episode"]:
+                Trakt["sync/watchlist"].remove({"shows": [{"ids": {"imdb": imdb_id}}]})
+            else:
+                logger.error(f"Unknown media type: {media_type}")
+                return False
+
+            logger.info(f"Successfully removed {item['title']} from Trakt watchlist")
+            return True
+        except exceptions.RequestException as e:
+            logger.error(f"Error removing item from Trakt watchlist: {e}")
+            return False
 
     def on_aborted(self):
         """Device authentication aborted.
@@ -133,7 +173,7 @@ class TraktProvider(ContentProvider):
         or via the "poll" event)
         """
 
-        print('Authentication aborted')
+        print("Authentication aborted")
 
         # Authentication aborted
         self.is_authenticating.acquire()
@@ -153,7 +193,7 @@ class TraktProvider(ContentProvider):
         # Store authorization for future calls
         self.authorization = authorization
 
-        print('Authentication successful - authorization: %r' % self.authorization)
+        print("Authentication successful - authorization: %r" % self.authorization)
 
         # Authentication complete
         self.is_authenticating.notify_all()
@@ -163,7 +203,7 @@ class TraktProvider(ContentProvider):
     def on_expired(self):
         """Device authentication expired."""
 
-        print('Authentication expired')
+        print("Authentication expired")
 
         # Authentication expired
         self.is_authenticating.acquire()
@@ -184,8 +224,8 @@ class TraktProvider(ContentProvider):
         # OAuth token refreshed, store authorization for future calls
         self.authorization = authorization
 
-        print('Token refreshed - authorization: %r' % self.authorization)
+        print("Token refreshed - authorization: %r" % self.authorization)
 
     def save_token(self):
-        with open(self.token_file, 'w') as f:
+        with open(self.token_file, "w") as f:
             json.dump(self.authorization, f)

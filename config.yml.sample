@@ -33,3 +33,7 @@ logging:
 # Developer Options
 developer:
   dry_run: false
+
+# Watchlist Management
+watchlist:
+  remove_after_adding: false

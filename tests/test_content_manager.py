@@ -1,18 +1,25 @@
 import pytest
 from unittest.mock import Mock
+from typing import Dict
 
 from content_fetcher.content_manager import ContentManager
 from content_fetcher.content_provider import ContentProvider
 
+
 class MockProvider(ContentProvider):
     def get_watchlist(self):
         return ["Test Movie 1", "Test Movie 2"]
+
+    def remove_from_watchlist(self, item: Dict[str, str]) -> bool:
+        return True
+
 
 def test_add_provider():
     manager = ContentManager()
     provider = MockProvider()
     manager.add_provider("Test", provider)
     assert "Test" in manager.providers
+
 
 def test_get_watchlist():
     manager = ContentManager()
@@ -21,10 +28,12 @@ def test_get_watchlist():
     watchlist = manager.get_watchlist("Test")
     assert watchlist == ["Test Movie 1", "Test Movie 2"]
 
+
 def test_get_watchlist_invalid_provider():
     manager = ContentManager()
     with pytest.raises(ValueError):
         manager.get_watchlist("Invalid")
+
 
 def test_get_all_watchlists():
     manager = ContentManager()
@@ -35,6 +44,5 @@ def test_get_all_watchlists():
     all_watchlists = manager.get_all_watchlists()
     assert all_watchlists == {
         "Test1": ["Test Movie 1", "Test Movie 2"],
-        "Test2": ["Test Movie 1", "Test Movie 2"]
+        "Test2": ["Test Movie 1", "Test Movie 2"],
     }
-
