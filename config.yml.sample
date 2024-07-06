@@ -1,0 +1,31 @@
+# Content Providers
+trakt:
+  # Trakt client ID and secret are loaded from .env file
+
+plex:
+  username: your_plex_username
+  password: your_plex_password
+
+# Indexers
+torrentio:
+  # Add any Torrentio-specific settings here if needed
+
+# Real-Debrid
+real_debrid:
+  api_token: YOUR_API_TOKEN_HERE
+
+# Quality Profile
+quality_profile:
+  resolutions:
+    - 2160p
+    - 1080p
+    - 720p
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Developer Options
+developer:
+  dry_run: false

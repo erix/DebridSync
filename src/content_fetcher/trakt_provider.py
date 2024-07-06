@@ -18,7 +18,7 @@ from icecream import ic
 logger = logging.getLogger(__name__)
 
 class TraktProvider(ContentProvider):
-    def __init__(self, client_id: str = TRAKT_CLIENT_ID, client_secret: str = TRAKT_CLIENT_SECRET):
+    def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_file = 'trakt_token.json'

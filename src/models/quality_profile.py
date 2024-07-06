@@ -6,7 +6,7 @@ from icecream import ic
 
 @dataclass
 class QualityProfile:
-    resolutions: List[str] = field(default_factory=lambda: ["2160p", "1080p", "720p"])
+    resolutions: List[str]
 
     def apply(self, releases):
         for resolution in self.resolutions:

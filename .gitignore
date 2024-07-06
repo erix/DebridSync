@@ -1,4 +1,5 @@
 trakt_token.json
+config.yml
 
 # Python
 __pycache__/
