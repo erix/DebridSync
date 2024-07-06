@@ -6,7 +6,7 @@ from content_fetcher.trakt_provider import TraktProvider
 from content_fetcher.content_manager import ContentManager
 from release_finder.torrentio_finder import Torrentio
 from release_finder.release_finder_manager import ReleaseFinderManager
-from models.filter import Filter
+from models.quality_profile import QualityProfile
 from debrid.real_debrid import RealDebrid
 from icecream import ic
 
@@ -39,8 +39,8 @@ def main():
     release_finder_manager = ReleaseFinderManager()
     release_finder_manager.add_finder("Torrentio", Torrentio())
 
-    # Create a Filter object
-    release_filter = Filter(resolutions=["2160p", "1080p"])
+    # Create a QualityProfile object
+    quality_profile = QualityProfile(resolutions=["2160p", "1080p"])
 
     # Initialize RealDebrid client
     real_debrid_api_token = os.environ.get("REAL_DEBRID_API_TOKEN")
@@ -68,8 +68,8 @@ def main():
             if releases:
                 logger.info(f"Found {len(releases)} releases for {title}")
 
-                # Filter releases using the Filter object
-                filtered_releases = release_filter.apply(releases)
+                # Filter releases using the QualityProfile object
+                filtered_releases = quality_profile.apply(releases)
 
                 logger.info(f"Filtered to {len(filtered_releases)} releases:")
                 for release in filtered_releases:
