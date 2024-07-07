@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from models.quality_profile import QualityProfile
 from release_finder.release_finder_manager import ReleaseFinderManager
 from release_finder.torrentio_finder import Torrentio
-from periodic_task import start_periodic_task
 
 from icecream import ic
 
@@ -22,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 def load_config():
     with open("config.yml", "r") as config_file:
-        return yaml.safe_load(config_file)
+        config = yaml.safe_load(config_file)
+
+    return config
 
 
 def load_env_vars():
@@ -174,6 +175,9 @@ def main():
     config = load_config()
     env_vars = load_env_vars()
     setup_logging(config)
+
+    logger.info("Loaded configuration:")
+    logger.info(yaml.dump(config, default_flow_style=False))
 
     dry_run = config.get("developer", {}).get("dry_run", False)
     remove_after_adding = config.get("watchlist", {}).get("remove_after_adding", False)
