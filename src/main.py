@@ -3,11 +3,11 @@ import time
 import logging
 import os
 import yaml
+
 from content_fetcher.content_manager import ContentManager
 from content_fetcher.collection_manager import CollectionManager
 from content_fetcher.plex_provider import PlexProvider
 from content_fetcher.trakt_provider import TraktProvider
-from content_fetcher.media_collection_provider import MediaCollectionProvider
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from models.quality_profile import QualityProfile
@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 def load_config():
     with open("config.yml", "r") as config_file:
         config = yaml.safe_load(config_file)
-
     return config
 
 
@@ -58,11 +57,9 @@ def initialize_content_providers(config, env_vars):
                 content_manager.add_provider("Trakt", trakt_provider)
                 collection_manager.add_provider("Trakt", trakt_provider)
             elif provider == "plex":
-                plex_provider = PlexProvider(
-                    username=settings["username"], password=settings["password"]
-                )
+                plex_provider = PlexProvider(token=settings["token"])
                 content_manager.add_provider("Plex", plex_provider)
-                collection_manager.add_provider("Plex", plex_provider)
+                # collection_manager.add_provider("Plex", plex_provider)
     return content_manager, collection_manager
 
 

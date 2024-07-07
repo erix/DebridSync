@@ -31,6 +31,7 @@ class TraktProvider(ContentProvider, MediaCollectionProvider):
         Trakt.on("oauth.token_refreshed", self._on_token_refreshed)
 
         self._configure_trakt()
+        logger.debug("Trakt initialized")
 
     def _configure_trakt(self):
         Trakt.configuration.defaults.client(

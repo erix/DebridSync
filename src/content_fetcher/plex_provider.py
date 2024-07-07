@@ -4,21 +4,29 @@ from typing import List, Dict
 from plexapi.myplex import MyPlexAccount
 
 from content_fetcher.content_provider import ContentProvider
-from content_fetcher.config import PLEX_PASSWORD, PLEX_USERNAME
+from icecream import ic
 
 logger = logging.getLogger(__name__)
 
 
 class PlexProvider(ContentProvider):
-    def __init__(self, username: str = PLEX_USERNAME, password: str = PLEX_PASSWORD):
-        self.username = username
-        self.password = password
+    def __init__(self, token: str):
+        self.token = token
+        self.account = MyPlexAccount(token=self.token)
+        logger.debug("Plex initialized")
 
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
-            account = MyPlexAccount(self.username, self.password)
-            watchlist = account.watchlist()
-            return [item.title for item in watchlist]
+            watchlist = self.account.watchlist(libtype="movie")
+            return [
+                {
+                    "title": item.title,
+                    "year": str(item.year) if hasattr(item, 'year') else '',
+                    "imdb_id": self._get_imdb_id(item.guids),
+                    "media_type": self._get_media_type(item),
+                }
+                for item in watchlist
+            ]
         except Exception as e:
             logger.error(f"Error fetching Plex watchlist: {e}")
             return []
@@ -28,3 +36,18 @@ class PlexProvider(ContentProvider):
         # This is a placeholder implementation
         logger.info(f"Removing item from Plex watchlist: {item['title']}")
         return True
+
+    def _get_imdb_id(self, ids: List[str]) -> str:
+        for id in ids:
+            try:
+                provider, id_value = id.id.split("://")
+                if provider == "imdb":
+                    return id_value
+            except ValueError:
+                return ""
+        return ""
+
+    def _get_media_type(self, item) -> str:
+        if hasattr(item, 'type'):
+            return item.type.lower()
+        return 'unknown'
