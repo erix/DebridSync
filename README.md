@@ -114,3 +114,66 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License.
+# Content Fetcher
+
+Content Fetcher is a Python application that fetches watchlists from various content providers, searches for releases using configured indexers, and adds the found content to Real-Debrid for downloading.
+
+## Features
+
+- Supports multiple content providers (currently Trakt and Plex)
+- Uses indexers to find releases (currently supports Torrentio)
+- Integrates with Real-Debrid for downloading
+- Configurable quality profiles
+- Periodic checking for new watchlist items
+
+## Configuration
+
+The application is configured using a `config.yml` file. Here's an overview of the main configuration sections:
+
+### Content Providers
+
+Configure the content providers you want to use. Currently supported:
+
+- Trakt
+- Plex
+
+### Indexers
+
+Configure the indexers to use for finding releases. Currently supported:
+
+- Torrentio
+
+### Real-Debrid
+
+Configure your Real-Debrid API token.
+
+### Quality Profile
+
+Set your preferred resolutions for content.
+
+### Logging
+
+Configure logging level and format.
+
+### Developer Options
+
+Enable/disable dry run mode for testing.
+
+### Watchlist Management
+
+Configure how often to check for new items and whether to remove items from the watchlist after processing.
+
+## Usage
+
+1. Clone the repository
+2. Install dependencies using Poetry
+3. Copy `config.yml.sample` to `config.yml` and edit it according to your needs
+4. Run the application using `poetry run python src/main.py`
+
+## Development
+
+This project uses Poetry for dependency management. To set up a development environment:
+
+1. Install Poetry
+2. Run `poetry install` to install dependencies
+3. Use `poetry run` to run commands within the virtual environment

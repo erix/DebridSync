@@ -2,9 +2,12 @@ from abc import ABC, abstractmethod
 from typing import List, Literal
 from models.release import Release
 
-class ReleaseFinder(ABC):
+
+class Indexer(ABC):
     @abstractmethod
-    def find_releases(self, imdb_id: str, media_type: Literal['movie', 'show', 'episode']) -> List[Release]:
+    def find_releases(
+        self, imdb_id: str, media_type: Literal["movie", "show", "episode"]
+    ) -> List[Release]:
         """
         Find releases for a given IMDb ID and media type.
 

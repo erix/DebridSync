@@ -11,8 +11,8 @@ from content_fetcher.media_collection_provider import MediaCollectionProvider
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from models.quality_profile import QualityProfile
-from release_finder.release_finder_manager import ReleaseFinderManager
-from release_finder.torrentio_finder import Torrentio
+from indexer.indexer_manager import IndexerManager
+from indexer.torrentio import Torrentio
 
 from icecream import ic
 
@@ -66,14 +66,14 @@ def initialize_content_providers(config, env_vars):
     return content_manager, collection_manager
 
 
-def initialize_release_finders(config):
-    release_finder_manager = ReleaseFinderManager()
-    release_finders = config.get("release_finders", {})
-    for finder, settings in release_finders.items():
+def initialize_indexers(config):
+    indexer_manager = IndexerManager()
+    indexers = config.get("indexers", {})
+    for indexer, settings in indexers.items():
         if settings.get("enabled", False):
-            if finder == "torrentio":
-                release_finder_manager.add_finder("Torrentio", Torrentio())
-    return release_finder_manager
+            if indexer == "torrentio":
+                indexer_manager.add_indexer("Torrentio", Torrentio())
+    return indexer_manager
 
 
 def is_item_processed(item, user_collection):
@@ -82,7 +82,7 @@ def is_item_processed(item, user_collection):
 
 def process_watchlist_item(
     item,
-    release_finder_manager,
+    indexer_manager,
     quality_profile,
     real_debrid,
     dry_run,
@@ -95,7 +95,7 @@ def process_watchlist_item(
     year = item.get("year", "N/A")
 
     logger.info(f"Searching for releases: {title} ({year}) - {media_type}")
-    releases = release_finder_manager.find_releases("Torrentio", imdb_id, media_type)
+    releases = indexer_manager.find_releases("Torrentio", imdb_id, media_type)
 
     if releases:
         logger.info(f"Found {len(releases)} releases for {title}")
@@ -142,7 +142,7 @@ def add_torrent_to_real_debrid(release, real_debrid, dry_run):
 def process_all_watchlists(
     content_manager,
     collection_manager,
-    release_finder_manager,
+    indexer_manager,
     quality_profile,
     real_debrid,
     dry_run,
@@ -162,7 +162,7 @@ def process_all_watchlists(
                 logger.info(f"Processing new item: {item['title']}")
                 process_watchlist_item(
                     item,
-                    release_finder_manager,
+                    indexer_manager,
                     quality_profile,
                     real_debrid,
                     dry_run,
@@ -187,7 +187,7 @@ def main():
         )
 
     content_manager, collection_manager = initialize_content_providers(config, env_vars)
-    release_finder_manager = initialize_release_finders(config)
+    indexer_manager = initialize_indexers(config)
     quality_profile = QualityProfile(
         resolutions=config["quality_profile"]["resolutions"]
     )
@@ -209,7 +209,7 @@ def main():
         process_all_watchlists,
         content_manager=content_manager,
         collection_manager=collection_manager,
-        release_finder_manager=release_finder_manager,
+        indexer_manager=indexer_manager,
         quality_profile=quality_profile,
         real_debrid=real_debrid,
         dry_run=dry_run,

@@ -1,11 +1,12 @@
 import requests
 from typing import List, Literal, Dict, Any
 import re
-from .release_finder import ReleaseFinder
+
+from .indexer import Indexer
 from models.release import Release
 
 
-class Torrentio(ReleaseFinder):
+class Torrentio(Indexer):
     def find_releases(
         self, imdb_id: str, media_type: Literal["movie", "show", "episode"]
     ) -> List[Release]:

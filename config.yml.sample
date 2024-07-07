@@ -8,8 +8,8 @@ content_providers:
     username: your_plex_username
     password: your_plex_password
 
-# Release Finders
-release_finders:
+# Indexers
+indexers:
   torrentio:
     enabled: true
     # Add any Torrentio-specific settings here if needed
