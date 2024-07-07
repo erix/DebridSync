@@ -3,7 +3,7 @@ name = "content_fetcher"
 version = "0.1.0"
 description = "A Python app to fetch watchlists from various services"
 authors = ["erix <erix@icloud.com>"]
-packages = [{include = "content_fetcher", from = "src"}]
+packages = [{ include = "content_fetcher", from = "src" }]
 
 
 [tool.poetry.dependencies]
@@ -31,3 +31,8 @@ target-version = ['py39']
 
 [tool.isort]
 profile = "black"
+
+[tool.pyright]
+exclude = [".venv"]
+venvPath = "."
+venv = ".venv"

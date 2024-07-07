@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import List, Dict, Optional, Any
+from typing import List, Dict
 from threading import Condition
 
 from trakt import Trakt
@@ -12,7 +12,6 @@ from trakt.objects import Movie, Show, Episode
 
 from content_fetcher.content_provider import ContentProvider
 from content_fetcher.media_collection_provider import MediaCollectionProvider
-from content_fetcher.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
 
 from icecream import ic
 
