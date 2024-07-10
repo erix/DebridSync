@@ -10,9 +10,10 @@ from content_fetcher.plex_provider import PlexProvider
 from content_fetcher.trakt_provider import TraktProvider
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
-from models.quality_profile import QualityProfile
 from indexer.indexer_manager import IndexerManager
 from indexer.torrentio import Torrentio
+from models.torrent_ranking import TorrentSettings, MyRankingModel
+from RTN import RTN, parse, title_match
 
 from icecream import ic
 
@@ -80,11 +81,11 @@ def is_item_processed(item, user_collection):
 def process_watchlist_item(
     item,
     indexer_manager,
-    quality_profile,
     real_debrid,
     dry_run,
     remove_after_adding,
     content_provider,
+    rtn,
 ):
     imdb_id = item["imdb_id"]
     media_type = item["media_type"]
@@ -96,13 +97,28 @@ def process_watchlist_item(
 
     if releases:
         logger.info(f"Found {len(releases)} releases for {title}")
-        # filtered_releases = quality_profile.apply(releases)
-        # logger.info(f"Filtered to {len(filtered_releases)} releases:")
-        # ic(releases)
 
+        ranked_releases = []
         for release in releases:
+            parsed = parse(release.title)
+            parsed_title = f"{parsed.parsed_title} ({parsed.year})"
+            movie_title = f"{title} ({year})"
+            if not title_match(parsed_title, movie_title, threshold=0.7):
+                logger.debug(f"Skipping wrong match torrent: {parsed.parsed_title}")
+                continue
+            ranked_torrent = rtn.rank(release.title, release.infoHash)
+            if ranked_torrent.fetch:
+                release.rank = ranked_torrent.rank
+                ranked_releases.append(release)
+            else:
+                logger.debug(f"Skipping garbage torrent: {release.title}")
+
+        # Sort releases by rank in descending order
+        ranked_releases.sort(key=lambda x: x.rank, reverse=True)
+
+        for release in ranked_releases:
             logger.info(
-                f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers})"
+                f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers}) (Rank: {release.rank})"
             )
             success = add_torrent_to_real_debrid(release, real_debrid, dry_run)
             if success and remove_after_adding and not dry_run:
@@ -141,10 +157,10 @@ def process_all_watchlists(
     content_manager,
     collection_manager,
     indexer_manager,
-    quality_profile,
     real_debrid,
     dry_run,
     remove_after_adding,
+    rtn,
 ):
     all_watchlists = content_manager.get_all_watchlists()
     user_collections = collection_manager.get_user_collections()
@@ -161,11 +177,11 @@ def process_all_watchlists(
                 process_watchlist_item(
                     item,
                     indexer_manager,
-                    quality_profile,
                     real_debrid,
                     dry_run,
                     remove_after_adding,
                     content_provider,
+                    rtn,
                 )
 
 
@@ -186,9 +202,6 @@ def main():
 
     content_manager, collection_manager = initialize_content_providers(config, env_vars)
     indexer_manager = initialize_indexers(config)
-    quality_profile = QualityProfile(
-        resolutions=config["quality_profile"]["resolutions"]
-    )
 
     real_debrid_api_token = config["real_debrid"]["api_token"]
     if not real_debrid_api_token:
@@ -196,6 +209,10 @@ def main():
         return
 
     real_debrid = RealDebrid(real_debrid_api_token)
+
+    # Initialize RTN
+    settings = TorrentSettings()
+    rtn = RTN(settings=settings, ranking_model=MyRankingModel())
 
     # Start the periodic task
     check_interval = config.get("watchlist", {}).get(
@@ -208,13 +225,13 @@ def main():
         content_manager=content_manager,
         collection_manager=collection_manager,
         indexer_manager=indexer_manager,
-        quality_profile=quality_profile,
         real_debrid=real_debrid,
         dry_run=dry_run,
         remove_after_adding=remove_after_adding,
+        rtn=rtn,
     )
 
-    # run immediatelly
+    # run immediately
     schedule.run_all()
 
     while True:
