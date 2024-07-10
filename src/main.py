@@ -12,8 +12,8 @@ from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from indexer.indexer_manager import IndexerManager
 from indexer.torrentio import Torrentio
-from models.torrent_ranking import TorrentSettings, MyRankingModel
-from RTN import RTN, parse, title_match
+from RTN import RTN, parse, title_match, SettingsModel
+from RTN.models import BaseRankingModel
 
 from icecream import ic
 
@@ -211,8 +211,21 @@ def main():
     real_debrid = RealDebrid(real_debrid_api_token)
 
     # Initialize RTN
-    settings = TorrentSettings()
-    rtn = RTN(settings=settings, ranking_model=MyRankingModel())
+    torrent_settings = config.get('torrent_settings', {})
+    settings = SettingsModel(
+        require=torrent_settings.get('require', []),
+        exclude=torrent_settings.get('exclude', []),
+        preferred=torrent_settings.get('preferred', [])
+    )
+
+    class ConfigRankingModel(BaseRankingModel):
+        pass
+
+    ranking_model_config = config.get('ranking_model', {})
+    for attr, value in ranking_model_config.items():
+        setattr(ConfigRankingModel, attr, value)
+
+    rtn = RTN(settings=settings, ranking_model=ConfigRankingModel())
 
     # Start the periodic task
     check_interval = config.get("watchlist", {}).get(

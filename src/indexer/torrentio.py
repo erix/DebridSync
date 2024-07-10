@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Torrentio(Indexer):
     def __init__(self):
-        self.base_url = "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/"
+        self.base_url = "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/"
 
     def find_releases(
         self, imdb_id: str, media_type: Literal["movie", "show", "episode"], title: str

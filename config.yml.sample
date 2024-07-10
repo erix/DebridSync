@@ -18,12 +18,24 @@ indexers:
 real_debrid:
   api_token: YOUR_API_TOKEN_HERE
 
-# Quality Profile
-quality_profile:
-  resolutions:
-    - 2160p
+# Torrent Settings
+torrent_settings:
+  require:
     - 1080p
-    - 720p
+    - 4K
+  exclude:
+    - CAM
+    - TS
+  preferred:
+    - HDR
+    - BluRay
+
+# Ranking Model
+ranking_model:
+  uhd: 200
+  hdr: 100
+  # Add more attributes and scores as needed
+
 
 # Logging
 logging:
