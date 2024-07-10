@@ -16,5 +16,5 @@ class IndexerManager:
         else:
             raise ValueError(f"No indexer found with name: {name}")
 
-    def find_releases(self, name: str, imdb_id: str, media_type: str):
-        return self.get_indexer(name).find_releases(imdb_id, media_type)
+    def find_releases(self, name: str, imdb_id: str, media_type: str, title: str):
+        return self.get_indexer(name).find_releases(imdb_id, media_type, title)

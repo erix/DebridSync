@@ -92,14 +92,15 @@ def process_watchlist_item(
     year = item.get("year", "N/A")
 
     logger.info(f"Searching for releases: {title} ({year}) - {media_type}")
-    releases = indexer_manager.find_releases("Torrentio", imdb_id, media_type)
+    releases = indexer_manager.find_releases("Torrentio", imdb_id, media_type, title)
 
     if releases:
         logger.info(f"Found {len(releases)} releases for {title}")
-        filtered_releases = quality_profile.apply(releases)
-        logger.info(f"Filtered to {len(filtered_releases)} releases:")
+        # filtered_releases = quality_profile.apply(releases)
+        # logger.info(f"Filtered to {len(filtered_releases)} releases:")
+        # ic(releases)
 
-        for release in filtered_releases:
+        for release in releases:
             logger.info(
                 f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers})"
             )
