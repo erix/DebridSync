@@ -211,17 +211,17 @@ def main():
     real_debrid = RealDebrid(real_debrid_api_token)
 
     # Initialize RTN
-    torrent_settings = config.get('torrent_settings', {})
+    torrent_settings = config.get("torrent_settings", {})
     settings = SettingsModel(
-        require=torrent_settings.get('require', []),
-        exclude=torrent_settings.get('exclude', []),
-        preferred=torrent_settings.get('preferred', [])
+        require=torrent_settings.get("require", []),
+        exclude=torrent_settings.get("exclude", []),
+        preferred=torrent_settings.get("preferred", []),
     )
 
     class ConfigRankingModel(BaseRankingModel):
         pass
 
-    ranking_model_config = config.get('ranking_model', {})
+    ranking_model_config = config.get("ranking_model", {})
     for attr, value in ranking_model_config.items():
         setattr(ConfigRankingModel, attr, value)
 

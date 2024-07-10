@@ -1,5 +1,5 @@
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 class RealDebrid:
     BASE_URL = "https://api.real-debrid.com/rest/1.0"
@@ -66,6 +66,22 @@ class RealDebrid:
             requests.RequestException: If there's an error with the API request.
         """
         url = f"{self.BASE_URL}/torrents/info/{torrent_id}"
+
+        response = requests.get(url, headers=self.headers)
+        response.raise_for_status()
+        return response.json()
+
+    def get_user_torrents(self) -> List[Dict[str, Any]]:
+        """
+        Fetch the list of torrents for the user.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing information about each torrent.
+
+        Raises:
+            requests.RequestException: If there's an error with the API request.
+        """
+        url = f"{self.BASE_URL}/torrents"
 
         response = requests.get(url, headers=self.headers)
         response.raise_for_status()
