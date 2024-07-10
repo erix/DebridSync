@@ -6,11 +6,12 @@ DebridSync is a Python application that fetches watchlists from various content 
 
 ## Features
 
-- Fetch watchlists from Trakt
-- Find releases using Torrentio
-- Filter releases based on quality preferences
+- Fetch watchlists from various content providers (currently Trakt and Plex)
+- Find releases using configured indexers (currently supports Torrentio)
+- Filter and rank releases using [RTN (Rank Torrent Name)](https://github.com/dreulavelle/rank-torrent-name)
 - Add selected releases to Real-Debrid
 - Dry run mode for testing without making changes
+- Periodic checking for new watchlist items
 
 ## Configuration
 
@@ -37,12 +38,23 @@ release_finders:
 real_debrid:
   api_token: YOUR_API_TOKEN_HERE
 
-# Quality Profile
-quality_profile:
-  resolutions:
-    - 2160p
+# Torrent Settings
+torrent_settings:
+  require:
     - 1080p
-    - 720p
+    - 4K
+  exclude:
+    - CAM
+    - TS
+  preferred:
+    - HDR
+    - BluRay
+
+# Ranking Model
+ranking_model:
+  uhd: 200
+  hdr: 100
+  # Add more attributes and scores as needed
 
 # Logging
 logging:
