@@ -25,8 +25,8 @@ content_providers:
     # Trakt client ID and secret are loaded from .env file
   plex:
     enabled: false
-    username: your_plex_username
-    password: your_plex_password
+    token: YOUR_PLEX_SERVER_TOKEN_HERE
+
 
 # Release Finders
 release_finders:
