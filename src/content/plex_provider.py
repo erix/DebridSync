@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict
-from models.movie import Movie
+from models.movie import Movie, MediaType
 
 from plexapi.myplex import MyPlexAccount
 
@@ -24,7 +24,7 @@ class PlexProvider:
                     title=item.title,
                     year=str(item.year) if hasattr(item, "year") else "",
                     imdb_id=self._get_imdb_id(item.guids),
-                    media_type=self._get_media_type(item),
+                    media_type=MediaType(self._get_media_type(item)),
                 )
                 for item in watchlist
             ]
@@ -48,7 +48,13 @@ class PlexProvider:
                 return ""
         return ""
 
-    def _get_media_type(self, item) -> str:
+    def _get_media_type(self, item) -> MediaType:
         if hasattr(item, "type"):
-            return item.type.lower()
-        return "unknown"
+            media_type = item.type.lower()
+            if media_type == "movie":
+                return MediaType.MOVIE
+            elif media_type == "show":
+                return MediaType.SHOW
+            elif media_type == "episode":
+                return MediaType.EPISODE
+        return MediaType.UNKNOWN

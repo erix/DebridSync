@@ -5,7 +5,7 @@ import logging
 import os
 from typing import List, Dict
 
-from models.movie import Movie
+from models.movie import Movie, MediaType
 from threading import Condition
 
 import trakt
@@ -103,7 +103,7 @@ class TraktProvider:
                     title=item.title,
                     year=str(item.year) if hasattr(item, "year") else "",
                     imdb_id=item.get_key("imdb") if hasattr(item, "get_key") else "",
-                    media_type=self._get_media_type(item),
+                    media_type=MediaType(self._get_media_type(item)),
                 )
                 for item in watchlist
             ]
@@ -133,21 +133,21 @@ class TraktProvider:
             logger.error(f"Unexpected error fetching Trakt watchlist: {e}")
             return []
 
-    def _get_media_type(self, item):
+    def _get_media_type(self, item) -> MediaType:
         if isinstance(item, trakt.objects.Movie) or (
             hasattr(item, "type") and item.type == "movie"
         ):
-            return "movie"
+            return MediaType.MOVIE
         elif isinstance(item, trakt.objects.Show) or (
             hasattr(item, "type") and item.type == "show"
         ):
-            return "show"
+            return MediaType.SHOW
         elif isinstance(item, trakt.objects.Episode) or (
             hasattr(item, "type") and item.type == "episode"
         ):
-            return "episode"
+            return MediaType.EPISODE
         else:
-            return "unknown"
+            return MediaType.UNKNOWN
 
     def remove_from_watchlist(self, item: Dict[str, str]) -> bool:
         logger.info(f"Log level is {logging.getLevelName(logger.getEffectiveLevel())}")

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from content.trakt_provider import TraktProvider
-from models.movie import Movie
+from models.movie import Movie, MediaType
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def test_get_watchlist_success(mock_trakt):
     mock_trakt.__getitem__.return_value.get.return_value = [mock_item]
 
     provider = TraktProvider("test_id", "test_secret")
-    with patch.object(provider, "_get_media_type", return_value="show"):
+    with patch.object(provider, "_get_media_type", return_value=MediaType.SHOW):
         result = provider.get_watchlist()
 
     assert result == [
@@ -26,7 +26,7 @@ def test_get_watchlist_success(mock_trakt):
             title="Test Show",
             year="2023",
             imdb_id="tt1234567",
-            media_type="show",
+            media_type=MediaType.SHOW,
         )
     ]
 

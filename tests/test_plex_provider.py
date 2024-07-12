@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from content.plex_provider import PlexProvider
-from models.movie import Movie
+from models.movie import Movie, MediaType
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def test_get_watchlist_success(mock_plex_account):
             title="Test Movie",
             year="2023",
             imdb_id="tt1234567",
-            media_type="movie",
+            media_type=MediaType.MOVIE,
         )
     ]
     mock_plex_account.assert_called_once_with(token="test_token")
