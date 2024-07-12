@@ -1,18 +1,19 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from content.trakt_provider import TraktProvider
+from models.movie import Movie
 
 
 @pytest.fixture
 def mock_trakt():
-    with patch("content.trakt_provider.Trakt") as mock:
+    with patch("content.trakt_provider.trakt.Trakt") as mock:
         yield mock
 
 
 def test_get_watchlist_success(mock_trakt):
     mock_item = MagicMock()
     mock_item.title = "Test Show"
-    mock_item.year = "2023"
+    mock_item.year = 2023
     mock_item.get_key.return_value = "tt1234567"
     mock_trakt.__getitem__.return_value.get.return_value = [mock_item]
 
@@ -21,12 +22,12 @@ def test_get_watchlist_success(mock_trakt):
         result = provider.get_watchlist()
 
     assert result == [
-        {
-            "title": "Test Show",
-            "year": "2023",
-            "imdb_id": "tt1234567",
-            "media_type": "show",
-        }
+        Movie(
+            title="Test Show",
+            year="2023",
+            imdb_id="tt1234567",
+            media_type="show",
+        )
     ]
 
 
@@ -88,34 +89,5 @@ def test_get_user_collection(mock_trakt):
             "year": "2023",
             "imdb_id": "tt7654321",
             "media_type": "show",
-        }
-    ]
-
-def test_get_user_ratings(mock_trakt):
-    mock_movie = MagicMock(title="Test Movie", year=2023, rating=8)
-    mock_movie.get_key.return_value = "tt1234567"
-    mock_show = MagicMock(title="Test Show", year=2023, rating=9)
-    mock_show.get_key.return_value = "tt7654321"
-    mock_trakt.__getitem__.return_value.movies.return_value = [mock_movie]
-    mock_trakt.__getitem__.return_value.shows.return_value = [mock_show]
-
-    provider = TraktProvider("test_id", "test_secret")
-    with patch.object(provider, "_get_media_type", side_effect=["movie", "show"]):
-        result = provider.get_user_ratings()
-
-    assert result == [
-        {
-            "title": "Test Movie",
-            "year": "2023",
-            "imdb_id": "tt1234567",
-            "media_type": "movie",
-            "rating": "8",
         },
-        {
-            "title": "Test Show",
-            "year": "2023",
-            "imdb_id": "tt7654321",
-            "media_type": "show",
-            "rating": "9",
-        }
     ]

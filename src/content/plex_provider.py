@@ -1,5 +1,6 @@
 import logging
 from typing import List, Dict
+from models.movie import Movie
 
 from plexapi.myplex import MyPlexAccount
 
@@ -14,17 +15,17 @@ class PlexProvider:
         self.account = MyPlexAccount(token=self.token)
         logger.debug("Plex initialized")
 
-    def get_watchlist(self) -> List[Dict[str, str]]:
+    def get_watchlist(self) -> List[Movie]:
         try:
             watchlist = self.account.watchlist(libtype="movie")
             ic(watchlist)
             return [
-                {
-                    "title": item.title,
-                    "year": str(item.year) if hasattr(item, "year") else "",
-                    "imdb_id": self._get_imdb_id(item.guids),
-                    "media_type": self._get_media_type(item),
-                }
+                Movie(
+                    title=item.title,
+                    year=str(item.year) if hasattr(item, "year") else "",
+                    imdb_id=self._get_imdb_id(item.guids),
+                    media_type=self._get_media_type(item),
+                )
                 for item in watchlist
             ]
         except Exception as e:

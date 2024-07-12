@@ -1,8 +1,9 @@
 from typing import Dict, List, Protocol
+from models.movie import Movie
 
 
 class ContentProvider(Protocol):
-    def get_watchlist(self) -> List[Dict[str, str]]: ...
+    def get_watchlist(self) -> List[Movie]: ...
 
     def remove_from_watchlist(self, item: Dict[str, str]) -> bool: ...
 
@@ -18,14 +19,14 @@ class ContentManager:
     def add_provider(self, name: str, provider: ContentProvider):
         self.providers[name] = provider
 
-    def get_watchlist(self, provider_name: str) -> List[Dict[str, str]]:
+    def get_watchlist(self, provider_name: str) -> List[Movie]:
         provider = self.providers.get(provider_name)
         if provider:
             return provider.get_watchlist()
         else:
             raise ValueError(f"No provider found with name: {provider_name}")
 
-    def get_all_watchlists(self) -> Dict[str, List[Dict[str, str]]]:
+    def get_all_watchlists(self) -> Dict[str, List[Movie]]:
         return {
             name: provider.get_watchlist() for name, provider in self.providers.items()
         }

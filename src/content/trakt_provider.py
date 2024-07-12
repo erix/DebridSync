@@ -4,11 +4,11 @@ import json
 import logging
 import os
 from typing import List, Dict
+
+from models.movie import Movie
 from threading import Condition
 
-from trakt import Trakt
-from trakt.core import exceptions
-from trakt.objects import Movie, Show, Episode
+import trakt
 
 from icecream import ic
 
@@ -25,20 +25,20 @@ class TraktProvider:
         self.is_authenticating = Condition()
 
         # Bind trakt events
-        Trakt.on("oauth.token_refreshed", self._on_token_refreshed)
+        trakt.Trakt.on("oauth.token_refreshed", self._on_token_refreshed)
 
         self._configure_trakt()
         logger.debug("Trakt initialized")
 
     def _configure_trakt(self):
-        Trakt.configuration.defaults.client(
+        trakt.Trakt.configuration.defaults.client(
             id=self.client_id, secret=self.client_secret
         )
 
         if os.path.exists(self.token_file):
             with open(self.token_file, "r") as f:
                 self.authorization = json.load(f)
-            Trakt.configuration.defaults.oauth.from_response(self.authorization)
+            trakt.Trakt.configuration.defaults.oauth.from_response(self.authorization)
         else:
             self._device_auth()
 
@@ -48,7 +48,7 @@ class TraktProvider:
             return False
 
         # Request new device code
-        code = Trakt["oauth/device"].code()
+        code = trakt.Trakt["oauth/device"].code()
 
         print(
             f"Please go to {code['verification_url']} and enter the code: {code['user_code']}"
@@ -56,7 +56,7 @@ class TraktProvider:
 
         # Construct device authentication poller
         poller = (
-            Trakt["oauth/device"]
+            trakt.Trakt["oauth/device"]
             .poll(**code)
             .on("aborted", self._on_aborted)
             .on("authenticated", self._on_authenticated)
@@ -72,7 +72,7 @@ class TraktProvider:
 
     def _refresh_token(self):
         try:
-            self.authorization = Trakt["oauth"].token_refresh(
+            self.authorization = trakt.Trakt["oauth"].token_refresh(
                 refresh_token=self.authorization["refresh_token"]
             )
 
@@ -81,7 +81,7 @@ class TraktProvider:
                 json.dump(self.authorization, f)
 
             # Update the configuration with the new token. Refresh token if expired
-            Trakt.configuration.defaults.oauth.from_response(
+            trakt.Trakt.configuration.defaults.oauth.from_response(
                 self.authorization, refresh=True
             )
 
@@ -91,37 +91,39 @@ class TraktProvider:
             os.remove(self.token_file)
             self._device_auth()
 
-    def get_watchlist(self) -> List[Dict[str, str]]:
+    def get_watchlist(self) -> List[Movie]:
         try:
             logger.info("Getting watchlist for erix...")
-            watchlist = Trakt["users/*/watchlist"].get(username="erix", extended="full")
+            watchlist = trakt.Trakt["users/*/watchlist"].get(
+                username="erix", extended="full"
+            )
 
             return [
-                {
-                    "title": item.title,
-                    "year": str(item.year) if hasattr(item, "year") else "",
-                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
-                    "media_type": self._get_media_type(item),
-                }
+                Movie(
+                    title=item.title,
+                    year=str(item.year) if hasattr(item, "year") else "",
+                    imdb_id=item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    media_type=self._get_media_type(item),
+                )
                 for item in watchlist
             ]
-        except exceptions.RequestFailedError as e:
+        except trakt.core.exceptions.RequestFailedError as e:
             if e.response.status_code == 401:  # Unauthorized, token might be expired
                 logger.info("Token expired. Refreshing...")
                 self._refresh_token()
                 # Retry after refreshing
-                watchlist = Trakt["users/*/watchlist"].get(
+                watchlist = trakt.Trakt["users/*/watchlist"].get(
                     username="erix", extended="full"
                 )
                 return [
-                    {
-                        "title": item.title,
-                        "year": str(item.year) if hasattr(item, "year") else "",
-                        "imdb_id": item.get_key("imdb")
+                    Movie(
+                        title=item.title,
+                        year=str(item.year) if hasattr(item, "year") else "",
+                        imdb_id=item.get_key("imdb")
                         if hasattr(item, "get_key")
                         else "",
-                        "media_type": self._get_media_type(item),
-                    }
+                        media_type=self._get_media_type(item),
+                    )
                     for item in watchlist
                 ]
             else:
@@ -132,11 +134,15 @@ class TraktProvider:
             return []
 
     def _get_media_type(self, item):
-        if isinstance(item, Movie) or (hasattr(item, "type") and item.type == "movie"):
+        if isinstance(item, trakt.objects.Movie) or (
+            hasattr(item, "type") and item.type == "movie"
+        ):
             return "movie"
-        elif isinstance(item, Show) or (hasattr(item, "type") and item.type == "show"):
+        elif isinstance(item, trakt.objects.Show) or (
+            hasattr(item, "type") and item.type == "show"
+        ):
             return "show"
-        elif isinstance(item, Episode) or (
+        elif isinstance(item, trakt.objects.Episode) or (
             hasattr(item, "type") and item.type == "episode"
         ):
             return "episode"
@@ -153,63 +159,47 @@ class TraktProvider:
             if media_type == "movie":
                 logger.debug(f"Delete movie from watchlist:{item['title']}")
                 print(
-                    Trakt["sync/watchlist"].remove(
+                    trakt.Trakt["sync/watchlist"].remove(
                         {"movies": [{"ids": {"imdb": imdb_id}}]}
                     )
                 )
             elif media_type in ["show", "episode"]:
-                Trakt["sync/watchlist"].remove({"shows": [{"ids": {"imdb": imdb_id}}]})
+                trakt.Trakt["sync/watchlist"].remove(
+                    {"shows": [{"ids": {"imdb": imdb_id}}]}
+                )
             else:
                 logger.error(f"Unknown media type: {media_type}")
                 return False
 
             logger.info(f"Successfully removed {item['title']} from Trakt watchlist")
             return True
-        except exceptions.RequestException as e:
+        except trakt.core.exceptions.RequestException as e:
             logger.error(f"Error removing item from Trakt watchlist: {e}")
             return False
 
     def get_user_collection(self) -> List[Dict[str, str]]:
         try:
             logger.info("Getting user collection...")
-            movies = Trakt["sync/collection"].movies(extended="full")
-            shows = Trakt["sync/collection"].shows(extended="full")
+            movies = trakt.Trakt["sync/collection"].movies(extended="full")
+            shows = trakt.Trakt["sync/collection"].shows(extended="full")
             collection = []
             for item in movies + shows:
-                collection.append({
-                    "title": item.title,
-                    "year": str(item.year) if hasattr(item, "year") else "",
-                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
-                    "media_type": self._get_media_type(item),
-                })
+                collection.append(
+                    {
+                        "title": item.title,
+                        "year": str(item.year) if hasattr(item, "year") else "",
+                        "imdb_id": item.get_key("imdb")
+                        if hasattr(item, "get_key")
+                        else "",
+                        "media_type": self._get_media_type(item),
+                    }
+                )
             return collection
         except exceptions.RequestFailedError as e:
             logger.error(f"Error fetching Trakt user collection: {e}")
             return []
         except Exception as e:
             logger.error(f"Unexpected error fetching Trakt user collection: {e}")
-            return []
-
-    def get_user_ratings(self) -> List[Dict[str, str]]:
-        try:
-            logger.info("Getting user ratings...")
-            movies = Trakt["sync/ratings"].movies(extended="full")
-            shows = Trakt["sync/ratings"].shows(extended="full")
-            ratings = []
-            for item in movies + shows:
-                ratings.append({
-                    "title": item.title,
-                    "year": str(item.year) if hasattr(item, "year") else "",
-                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
-                    "media_type": self._get_media_type(item),
-                    "rating": str(item.rating),
-                })
-            return ratings
-        except exceptions.RequestFailedError as e:
-            logger.error(f"Error fetching Trakt user ratings: {e}")
-            return []
-        except Exception as e:
-            logger.error(f"Unexpected error fetching Trakt user ratings: {e}")
             return []
 
     def _on_aborted(self):
