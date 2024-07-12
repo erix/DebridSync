@@ -7,7 +7,10 @@ from content.content_manager import ContentManager, ContentProvider
 
 class MockProvider(ContentProvider):
     def get_watchlist(self) -> List[Dict[str, str]]:
-        return [{"title": "Test Movie 1", "year": "2023"}, {"title": "Test Movie 2", "year": "2022"}]
+        return [
+            {"title": "Test Movie 1", "year": "2023"},
+            {"title": "Test Movie 2", "year": "2022"},
+        ]
 
     def remove_from_watchlist(self, item: Dict[str, str]) -> bool:
         return True
@@ -31,15 +34,10 @@ def test_get_watchlist():
     provider = MockProvider()
     manager.add_provider("Test", provider)
     watchlist = manager.get_watchlist("Test")
-    assert watchlist == [{"title": "Test Movie 1", "year": "2023"}, {"title": "Test Movie 2", "year": "2022"}]
-
-
-def test_get_all_watchlists():
-    manager = ContentManager()
-    provider = MockProvider()
-    manager.add_provider("Test", provider)
-    all_watchlists = manager.get_all_watchlists()
-    assert all_watchlists == {"Test": [{"title": "Test Movie 1", "year": "2023"}, {"title": "Test Movie 2", "year": "2022"}]}
+    assert watchlist == [
+        {"title": "Test Movie 1", "year": "2023"},
+        {"title": "Test Movie 2", "year": "2022"},
+    ]
 
 
 def test_get_provider():
@@ -81,6 +79,12 @@ def test_get_all_watchlists():
     manager.add_provider("Test2", provider2)
     all_watchlists = manager.get_all_watchlists()
     assert all_watchlists == {
-        "Test1": [{"title": "Test Movie 1", "year": "2023"}, {"title": "Test Movie 2", "year": "2022"}],
-        "Test2": [{"title": "Test Movie 1", "year": "2023"}, {"title": "Test Movie 2", "year": "2022"}],
+        "Test1": [
+            {"title": "Test Movie 1", "year": "2023"},
+            {"title": "Test Movie 2", "year": "2022"},
+        ],
+        "Test2": [
+            {"title": "Test Movie 1", "year": "2023"},
+            {"title": "Test Movie 2", "year": "2022"},
+        ],
     }
