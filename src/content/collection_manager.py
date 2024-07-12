@@ -1,5 +1,9 @@
-from typing import Dict, List
-from content_fetcher.media_collection_provider import MediaCollectionProvider
+from typing import Dict, List, Protocol
+
+
+class MediaCollectionProvider(Protocol):
+    def get_user_collection(self) -> List[Dict[str, str]]: ...
+
 
 class CollectionManager:
     def __init__(self):

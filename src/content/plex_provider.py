@@ -3,13 +3,12 @@ from typing import List, Dict
 
 from plexapi.myplex import MyPlexAccount
 
-from content_fetcher.content_provider import ContentProvider
 from icecream import ic
 
 logger = logging.getLogger(__name__)
 
 
-class PlexProvider(ContentProvider):
+class PlexProvider:
     def __init__(self, token: str):
         self.token = token
         self.account = MyPlexAccount(token=self.token)
@@ -18,10 +17,11 @@ class PlexProvider(ContentProvider):
     def get_watchlist(self) -> List[Dict[str, str]]:
         try:
             watchlist = self.account.watchlist(libtype="movie")
+            ic(watchlist)
             return [
                 {
                     "title": item.title,
-                    "year": str(item.year) if hasattr(item, 'year') else '',
+                    "year": str(item.year) if hasattr(item, "year") else "",
                     "imdb_id": self._get_imdb_id(item.guids),
                     "media_type": self._get_media_type(item),
                 }
@@ -48,6 +48,6 @@ class PlexProvider(ContentProvider):
         return ""
 
     def _get_media_type(self, item) -> str:
-        if hasattr(item, 'type'):
+        if hasattr(item, "type"):
             return item.type.lower()
-        return 'unknown'
+        return "unknown"

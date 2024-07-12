@@ -10,16 +10,13 @@ from trakt import Trakt
 from trakt.core import exceptions
 from trakt.objects import Movie, Show, Episode
 
-from content_fetcher.content_provider import ContentProvider
-from content_fetcher.media_collection_provider import MediaCollectionProvider
-
 from icecream import ic
 
 
 logger = logging.getLogger(__name__)
 
 
-class TraktProvider(ContentProvider, MediaCollectionProvider):
+class TraktProvider:
     def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
         self.client_secret = client_secret
@@ -177,20 +174,42 @@ class TraktProvider(ContentProvider, MediaCollectionProvider):
             logger.info("Getting user collection...")
             movies = Trakt["sync/collection"].movies(extended="full")
             shows = Trakt["sync/collection"].shows(extended="full")
-            # ic(movies)
             collection = []
-            for item in movies:
-                collection.append(item)
-
-            for item in shows:
-                collection.append(item)
+            for item in movies + shows:
+                collection.append({
+                    "title": item.title,
+                    "year": str(item.year) if hasattr(item, "year") else "",
+                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    "media_type": self._get_media_type(item),
+                })
             return collection
-
         except exceptions.RequestFailedError as e:
             logger.error(f"Error fetching Trakt user collection: {e}")
             return []
         except Exception as e:
             logger.error(f"Unexpected error fetching Trakt user collection: {e}")
+            return []
+
+    def get_user_ratings(self) -> List[Dict[str, str]]:
+        try:
+            logger.info("Getting user ratings...")
+            movies = Trakt["sync/ratings"].movies(extended="full")
+            shows = Trakt["sync/ratings"].shows(extended="full")
+            ratings = []
+            for item in movies + shows:
+                ratings.append({
+                    "title": item.title,
+                    "year": str(item.year) if hasattr(item, "year") else "",
+                    "imdb_id": item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    "media_type": self._get_media_type(item),
+                    "rating": str(item.rating),
+                })
+            return ratings
+        except exceptions.RequestFailedError as e:
+            logger.error(f"Error fetching Trakt user ratings: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error fetching Trakt user ratings: {e}")
             return []
 
     def _on_aborted(self):

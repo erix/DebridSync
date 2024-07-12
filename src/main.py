@@ -4,10 +4,10 @@ import logging
 import os
 import yaml
 
-from content_fetcher.content_manager import ContentManager
-from content_fetcher.collection_manager import CollectionManager
-from content_fetcher.plex_provider import PlexProvider
-from content_fetcher.trakt_provider import TraktProvider
+from content.content_manager import ContentManager
+from content.collection_manager import CollectionManager
+from content.plex_provider import PlexProvider
+from content.trakt_provider import TraktProvider
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from indexer.indexer_manager import IndexerManager

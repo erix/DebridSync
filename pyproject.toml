@@ -1,9 +1,9 @@
 [tool.poetry]
-name = "content_fetcher"
+name = "content"
 version = "0.1.0"
 description = "A Python app to fetch watchlists from various services"
 authors = ["erix <erix@icloud.com>"]
-packages = [{ include = "content_fetcher", from = "src" }]
+packages = [{ include = "content", from = "src" }]
 
 [tool.poetry.scripts]
 debrid-sync = 'main:main'

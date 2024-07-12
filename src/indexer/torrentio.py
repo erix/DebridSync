@@ -2,9 +2,7 @@ from typing import List, Literal, Dict, Any
 import re
 import requests
 import logging
-from typing import List, Literal
 
-from .indexer import Indexer
 from models.release import Release
 
 from icecream import ic
@@ -12,7 +10,7 @@ from icecream import ic
 logger = logging.getLogger(__name__)
 
 
-class Torrentio(Indexer):
+class Torrentio:
     def __init__(self):
         self.base_url = "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/"
 

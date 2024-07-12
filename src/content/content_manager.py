@@ -1,6 +1,14 @@
-from typing import Dict, List
+from typing import Dict, List, Protocol
 
-from content_fetcher.content_provider import ContentProvider
+
+class ContentProvider(Protocol):
+    def get_watchlist(self) -> List[Dict[str, str]]: ...
+
+    def remove_from_watchlist(self, item: Dict[str, str]) -> bool: ...
+
+    def get_user_collection(self) -> List[Dict[str, str]]: ...
+
+    def get_user_ratings(self) -> List[Dict[str, str]]: ...
 
 
 class ContentManager:
