@@ -31,13 +31,13 @@ class TestIndexerManager(unittest.TestCase):
         ]
         self.manager.add_indexer("test_indexer", mock_indexer)
 
-        results = self.manager.find_releases("test_indexer", "tt1234567", "movie")
+        results = self.manager.find_releases("test_indexer", "tt1234567", "movie", "Test Movie")
         self.assertEqual(results, [{"title": "Test Release", "infoHash": "123456"}])
-        mock_indexer.find_releases.assert_called_once_with("tt1234567", "movie")
+        mock_indexer.find_releases.assert_called_once_with("tt1234567", "movie", "Test Movie")
 
     def test_find_releases_invalid_indexer(self):
-        with self.assertRaises(ValueError):  # Changed from ValueError to KeyError
-            self.manager.find_releases("non_existent_indexer", "tt1234567", "movie")
+        with self.assertRaises(ValueError):
+            self.manager.find_releases("non_existent_indexer", "tt1234567", "movie", "Test Movie")
 
 
 if __name__ == "__main__":

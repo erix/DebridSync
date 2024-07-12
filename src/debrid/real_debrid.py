@@ -1,6 +1,9 @@
 import requests
 from typing import Dict, Any, List
 
+from icecream import ic
+
+
 class RealDebrid:
     BASE_URL = "https://api.real-debrid.com/rest/1.0"
 
@@ -82,7 +85,25 @@ class RealDebrid:
             requests.RequestException: If there's an error with the API request.
         """
         url = f"{self.BASE_URL}/torrents"
+        limit = 100
+        offset = 0
+        all_torrents = []
 
-        response = requests.get(url, headers=self.headers)
-        response.raise_for_status()
-        return response.json()
+        while True:
+            params = {"limit": limit, "offset": offset}
+            response = requests.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            ic(response.text)
+
+            torrents = response.json()
+            all_torrents.extend(torrents)
+
+            total_count = int(response.headers.get("X-Total-Count", 0))
+            print(f"Total number of torrents: {total_count}")
+
+            if offset + limit >= total_count:
+                break
+
+            offset += limit  # Increment the offset for the next iteration
+
+        return all_torrents

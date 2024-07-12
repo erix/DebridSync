@@ -29,7 +29,7 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt1234567", "movie")
+        releases = self.torrentio.find_releases("tt1234567", "movie", "Movie Title")
 
         # Assert the results
         self.assertEqual(len(releases), 2)
@@ -50,7 +50,7 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
-            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/movie/tt1234567.json"
+            "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/movie/tt1234567.json"
         )
 
     @patch("src.indexer.torrentio.requests.get")
@@ -69,7 +69,7 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt9876543", "show")
+        releases = self.torrentio.find_releases("tt9876543", "show", "TV Show")
 
         # Assert the results
         self.assertEqual(len(releases), 1)
@@ -84,7 +84,7 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
-            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/series/tt9876543:1:1.json"
+            "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/series/tt9876543:1:1.json"
         )
 
     @patch("src.indexer.torrentio.requests.get")
@@ -103,7 +103,7 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt9876543", "episode")
+        releases = self.torrentio.find_releases("tt9876543", "episode", "TV Show")
 
         # Assert the results
         self.assertEqual(len(releases), 1)
@@ -118,7 +118,7 @@ class TestTorrentio(unittest.TestCase):
 
         # Assert that the correct URL was called
         mock_get.assert_called_once_with(
-            "https://torrentio.strem.fun/sort=qualitysize|qualityfilter=480p,scr,cam/stream/series/tt9876543.json"
+            "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/series/tt9876543.json"
         )
 
     @patch("src.indexer.torrentio.requests.get")
@@ -129,7 +129,9 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt0000000", "movie")
+        releases = self.torrentio.find_releases(
+            "tt0000000", "movie", "Non-existent Movie"
+        )
 
         # Assert that an empty list is returned
         self.assertEqual(releases, [])
@@ -137,7 +139,7 @@ class TestTorrentio(unittest.TestCase):
     def test_find_releases_invalid_media_type(self):
         # Test with an invalid media type
         with self.assertRaises(ValueError):
-            self.torrentio.find_releases("tt1234567", "invalid_type")
+            self.torrentio.find_releases("tt1234567", "invalid_type", "Invalid Title")
 
     def test_parse_title(self):
         # Test the _parse_title method
@@ -150,6 +152,7 @@ class TestTorrentio(unittest.TestCase):
         self.assertEqual(result["title"], "Movie.Title.2024.2160p.DV.HDR10Plus.HEVC")
         self.assertEqual(result["size_in_gb"], 30.4)
         self.assertEqual(result["peers"], 74)
+        self.assertEqual(result["quality"], "2160p")
 
         # Test with MB
         result = torrentio._parse_title(
@@ -158,12 +161,14 @@ class TestTorrentio(unittest.TestCase):
         self.assertEqual(result["title"], "TV.Show.S01E01.1080p.WEB-DL")
         self.assertEqual(result["size_in_gb"], 0.78)
         self.assertEqual(result["peers"], 30)
+        self.assertEqual(result["quality"], "1080p")
 
         # Test with no additional info
         result = torrentio._parse_title("Movie.Title.2024.1080p.WEB-DL.x264")
         self.assertEqual(result["title"], "Movie.Title.2024.1080p.WEB-DL.x264")
         self.assertEqual(result["size_in_gb"], 0)
         self.assertEqual(result["peers"], 0)
+        self.assertEqual(result["quality"], "1080p")
 
 
 if __name__ == "__main__":
