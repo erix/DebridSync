@@ -8,7 +8,6 @@ from content.collection_manager import CollectionManager
 from content.content_manager import ContentManager
 from content.plex_provider import PlexProvider
 from content.trakt_provider import TraktProvider
-from content.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
 from icecream import ic
@@ -45,23 +44,46 @@ def setup_logging(config):
     logger.debug(f"Logging configured with level: {log_level_str}")
 
 
-def initialize_content_providers(config, env_vars, trakt):
+def initialize_content_providers(config, trakt):
     content_manager = ContentManager()
     collection_manager = CollectionManager()
-    content_providers = config.get("content_providers", {})
-    for provider, settings in content_providers.items():
-        if settings.get("enabled", False):
-            if provider == "trakt":
-                content_manager.add_provider("Trakt", trakt)
-                # collection_manager.add_provider("Trakt", trakt_provider)
-            elif provider == "plex":
-                plex_provider = PlexProvider(
-                    token=settings["token"],
-                    server_url=settings["server_url"],
-                    library_name=settings["library_name"],
-                )
-                content_manager.add_provider("Plex", plex_provider)
-                collection_manager.add_provider("Plex", plex_provider)
+    media_library = config.get("media_library", {})
+    watchlists = config.get("watchlists", [])
+    plex_provider = None
+
+    plex_libraries = media_library.get(
+        "plex_libraries",
+    )
+
+    plex_config = config.get("plex", {})
+    if plex_config:
+        plex_provider = PlexProvider(
+            token=plex_config.get("token"),
+            server_url=plex_config.get("server_url"),
+            library_name=plex_libraries[0],  # TODO: Use the first library as default
+        )
+
+    if "trakt_watchlist" in watchlists:
+        logger.info("Added Trakt watchlist")
+        content_manager.add_provider("Trakt", trakt)
+
+    if "plex_watchlist" in watchlists and plex_provider:
+        logger.info("Added Plex watchlist")
+        content_manager.add_provider("Plex", plex_provider)
+
+    if media_library.get("trakt_collection", False):
+        collection_manager.add_provider("Trakt", trakt)
+
+    if plex_libraries and plex_provider:
+        collection_manager.add_provider("Plex", plex_provider)
+
+    # if media_library.get("real_debrid", False):
+    #     real_debrid_config = config.get("real_debrid", {})
+    #     real_debrid_provider = RealDebridProvider(
+    #         api_token=real_debrid_config.get("api_token"),
+    #     )
+    #     collection_manager.add_provider("RealDebrid", real_debrid_provider
+
     return content_manager, collection_manager
 
 
@@ -77,9 +99,6 @@ def initialize_indexers(config):
 
 def is_item_processed(item: Movie, user_collection):
     return any(movie["imdb_id"] == item.imdb_id for movie in user_collection)
-
-
-from models.movie import Movie
 
 
 def process_watchlist_item(
@@ -217,12 +236,11 @@ def main():
             "Running in dry run mode. No changes will be made to Real-Debrid or watchlists."
         )
 
-    # always create Trakt
     trakt = TraktProvider(
         client_id=env_vars["TRAKT_CLIENT_ID"],
         client_secret=env_vars["TRAKT_CLIENT_SECRET"],
     )
-    content_manager, collection_manager = initialize_content_providers(config, env_vars, trakt)
+    content_manager, collection_manager = initialize_content_providers(config, trakt)
     indexer_manager = initialize_indexers(config)
 
     real_debrid_api_token = config["real_debrid"]["api_token"]
@@ -243,7 +261,7 @@ def main():
     class ConfigRankingModel(BaseRankingModel):
         pass
 
-    ranking_model_config = config.get("ranking_model", {})
+    ranking_model_config = config.get("torrent_settings", {}).get("ranking_model", {})
     for attr, value in ranking_model_config.items():
         setattr(ConfigRankingModel, attr, value)
 

@@ -2,7 +2,7 @@
 
 **Note: This project is currently under heavy development and is not yet intended for general usage.**
 
-DebridSync is a Python application that fetches watchlists from various content providers (such as Trakt), finds releases for the items in the watchlist using torrent indexers (like Torrentio), and adds the best quality releases to a debrid service (currently supporting Real-Debrid).
+DebridSync is a Python application that fetches watchlists from various content providers (such as Trakt and Plex), finds releases for the items in the watchlist using torrent indexers (like Torrentio), and adds the best quality releases to a debrid service (currently supporting Real-Debrid).
 
 ## Features
 
@@ -18,16 +18,25 @@ DebridSync is a Python application that fetches watchlists from various content 
 The application uses a YAML configuration file (`config.yml`) and environment variables for sensitive information. Here's an example configuration:
 
 ```yaml
-# Content Providers
-content_providers:
-  trakt:
-    enabled: true
-    # Trakt client ID and secret are loaded from .env file
-  plex:
-    enabled: false
-    token: YOUR_PLEX_SERVER_TOKEN_HERE
-    server_url: YOUR_PLEX_SERVER_URL_HERE
-    library_name: Movies
+# Watchlists
+watchlists:
+  - trakt_watchlist
+  - plex_watchlist
+  - https://trakt.tv/users/username/lists/listname
+
+
+# Media Library
+media_library:
+  plex_libraries:
+    - Movies
+    - TV Shows
+  trakt_collection: true
+  real_debrid: true
+
+# Plex
+plex:
+  server_url: http://your-plex-server:32400
+  token: YOUR_PLEX_TOKEN_HERE
 
 # Indexers
 indexers:
@@ -50,12 +59,10 @@ torrent_settings:
   preferred:
     - HDR
     - BluRay
-
-# Ranking Model
-ranking_model:
-  uhd: 200
-  hdr: 100
-  # Add more attributes and scores as needed
+  ranking_model:
+    uhd: 200
+    hdr: 100
+    # Add more attributes and scores as needed
 
 
 # Logging
