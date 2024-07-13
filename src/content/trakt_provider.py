@@ -5,6 +5,7 @@ import logging
 import os
 from typing import List, Dict
 from datetime import datetime
+from functools import wraps
 
 from models.movie import Movie, MediaType
 from threading import Condition
@@ -15,6 +16,16 @@ from icecream import ic
 
 
 logger = logging.getLogger(__name__)
+
+
+def require_auth(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not hasattr(self, "authorization") or not self.authorization:
+            self._device_auth()
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class TraktProvider:
@@ -40,8 +51,6 @@ class TraktProvider:
             with open(self.token_file, "r") as f:
                 self.authorization = json.load(f)
             trakt.Trakt.configuration.defaults.oauth.from_response(self.authorization)
-        else:
-            self._device_auth()
 
     def _device_auth(self):
         if not self.is_authenticating.acquire(blocking=False):
@@ -86,12 +95,13 @@ class TraktProvider:
                 self.authorization, refresh=True
             )
 
-        except exceptions.RequestFailedError as e:
+        except Exception as e:
             print(f"Error refreshing token: {e}")
             # If refresh fails, we might need to re-authenticate
             os.remove(self.token_file)
             self._device_auth()
 
+    @require_auth
     def get_watchlist(self) -> List[Movie]:
         try:
             logger.info("Getting watchlist for erix...")
@@ -150,6 +160,7 @@ class TraktProvider:
         else:
             return MediaType.UNKNOWN
 
+    @require_auth
     def remove_from_watchlist(self, item: Dict[str, str]) -> bool:
         logger.info(f"Log level is {logging.getLevelName(logger.getEffectiveLevel())}")
         try:
@@ -178,6 +189,7 @@ class TraktProvider:
             logger.error(f"Error removing item from Trakt watchlist: {e}")
             return False
 
+    @require_auth
     def get_user_collection(self) -> List[Dict[str, str]]:
         try:
             logger.info("Getting user collection...")
@@ -196,11 +208,8 @@ class TraktProvider:
                     }
                 )
             return collection
-        except exceptions.RequestFailedError as e:
-            logger.error(f"Error fetching Trakt user collection: {e}")
-            return []
         except Exception as e:
-            logger.error(f"Unexpected error fetching Trakt user collection: {e}")
+            logger.error(f"Error fetching Trakt user collection: {e}")
             return []
 
     def check_released(self, movie: Movie) -> bool:

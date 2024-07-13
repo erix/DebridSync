@@ -45,18 +45,14 @@ def setup_logging(config):
     logger.debug(f"Logging configured with level: {log_level_str}")
 
 
-def initialize_content_providers(config, env_vars):
+def initialize_content_providers(config, env_vars, trakt):
     content_manager = ContentManager()
     collection_manager = CollectionManager()
     content_providers = config.get("content_providers", {})
     for provider, settings in content_providers.items():
         if settings.get("enabled", False):
             if provider == "trakt":
-                trakt_provider = TraktProvider(
-                    client_id=env_vars["TRAKT_CLIENT_ID"],
-                    client_secret=env_vars["TRAKT_CLIENT_SECRET"],
-                )
-                content_manager.add_provider("Trakt", trakt_provider)
+                content_manager.add_provider("Trakt", trakt)
                 # collection_manager.add_provider("Trakt", trakt_provider)
             elif provider == "plex":
                 plex_provider = PlexProvider(
@@ -179,6 +175,7 @@ def process_all_watchlists(
     real_debrid,
     dry_run,
     remove_after_adding,
+    trakt,
     rtn,
 ):
     all_watchlists = content_manager.get_all_watchlists()
@@ -200,7 +197,7 @@ def process_all_watchlists(
                     dry_run,
                     remove_after_adding,
                     content_provider,
-                    content_manager.get_provider("Trakt"),
+                    trakt,
                     rtn,
                 )
 
@@ -220,7 +217,12 @@ def main():
             "Running in dry run mode. No changes will be made to Real-Debrid or watchlists."
         )
 
-    content_manager, collection_manager = initialize_content_providers(config, env_vars)
+    # always create Trakt
+    trakt = TraktProvider(
+        client_id=env_vars["TRAKT_CLIENT_ID"],
+        client_secret=env_vars["TRAKT_CLIENT_SECRET"],
+    )
+    content_manager, collection_manager = initialize_content_providers(config, env_vars, trakt)
     indexer_manager = initialize_indexers(config)
 
     real_debrid_api_token = config["real_debrid"]["api_token"]
@@ -261,6 +263,7 @@ def main():
         real_debrid=real_debrid,
         dry_run=dry_run,
         remove_after_adding=remove_after_adding,
+        trakt=trakt,
         rtn=rtn,
     )
 
