@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from typing import List, Dict
+from datetime import datetime
 
 from models.movie import Movie, MediaType
 from threading import Condition
@@ -201,6 +202,36 @@ class TraktProvider:
         except Exception as e:
             logger.error(f"Unexpected error fetching Trakt user collection: {e}")
             return []
+
+    def check_released(self, movie: Movie) -> bool:
+        try:
+            logger.info(f"Checking release status for: {movie.title}")
+            trakt_movie = trakt.Trakt["movies"].get(movie.imdb_id)
+
+            # Check if the movie has been released digitally or physically
+            if trakt_movie.released:
+                current_date = datetime.now().date()
+                release_date = datetime.strptime(
+                    trakt_movie.released, "%Y-%m-%d"
+                ).date()
+
+                if current_date >= release_date:
+                    logger.info(f"{movie.title} has been released.")
+                    return True
+                else:
+                    logger.info(f"{movie.title} has not been released yet.")
+                    return False
+            else:
+                logger.info(f"No release date available for {movie.title}")
+                return False
+        except exceptions.RequestFailedError as e:
+            logger.error(f"Error checking release status for {movie.title}: {e}")
+            return False
+        except Exception as e:
+            logger.error(
+                f"Unexpected error checking release status for {movie.title}: {e}"
+            )
+            return False
 
     def _on_aborted(self):
         """Device authentication aborted.

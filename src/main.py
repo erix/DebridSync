@@ -1,21 +1,22 @@
-import schedule
-import time
 import logging
 import os
-import yaml
+import time
 
-from content.content_manager import ContentManager
+import schedule
+import yaml
 from content.collection_manager import CollectionManager
+from content.content_manager import ContentManager
 from content.plex_provider import PlexProvider
 from content.trakt_provider import TraktProvider
+from content.config import TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET
 from debrid.real_debrid import RealDebrid
 from dotenv import load_dotenv
+from icecream import ic
 from indexer.indexer_manager import IndexerManager
 from indexer.torrentio import Torrentio
-from RTN import RTN, parse, title_match, SettingsModel
+from RTN import RTN, SettingsModel, parse, title_match
 from RTN.models import BaseRankingModel
-
-from icecream import ic
+from models.movie import Movie
 
 logger = logging.getLogger(__name__)
 
@@ -78,23 +79,33 @@ def initialize_indexers(config):
     return indexer_manager
 
 
-def is_item_processed(item, user_collection):
-    return any(id == item["imdb_id"] for id in user_collection)
+def is_item_processed(item: Movie, user_collection):
+    return any(movie["imdb_id"] == item.imdb_id for movie in user_collection)
+
+
+from models.movie import Movie
 
 
 def process_watchlist_item(
-    item,
+    item: Movie,
     indexer_manager,
     real_debrid,
     dry_run,
     remove_after_adding,
     content_provider,
+    trakt,
     rtn,
 ):
-    imdb_id = item["imdb_id"]
-    media_type = item["media_type"]
-    title = item["title"]
-    year = item.get("year", "N/A")
+    imdb_id = item.imdb_id
+    media_type = item.media_type
+    title = item.title
+    year = item.year if item.year else "N/A"
+
+    # Check if the item has been released using TraktProvider
+    is_released = trakt.check_released(item)
+    if not is_released:
+        logger.info(f"{title} ({year}) has not been released yet. Skipping.")
+        return
 
     logger.info(f"Searching for releases: {title} ({year}) - {media_type}")
     releases = indexer_manager.find_releases("Torrentio", imdb_id, media_type, title)
@@ -116,6 +127,10 @@ def process_watchlist_item(
                 ranked_releases.append(release)
             else:
                 logger.debug(f"Skipping garbage torrent: {release.title}")
+
+        if not ranked_releases:
+            logger.info(f"No downloadable relase found for {title}")
+            return
 
         # Sort releases by rank in descending order
         ranked_releases.sort(key=lambda x: x.rank, reverse=True)
@@ -176,8 +191,8 @@ def process_all_watchlists(
         logger.info(f"Checking for new items in {provider} watchlist")
         content_provider = content_manager.get_provider(provider)
         for item in watchlist:
-            if not is_item_processed(item, user_collections):
-                logger.info(f"Processing new item: {item['title']}")
+            if not is_item_processed(item, user_collections["Plex"]):
+                logger.info(f"Processing new item: {item.title}")
                 process_watchlist_item(
                     item,
                     indexer_manager,
@@ -185,6 +200,7 @@ def process_all_watchlists(
                     dry_run,
                     remove_after_adding,
                     content_provider,
+                    content_manager.get_provider("Trakt"),
                     rtn,
                 )
 

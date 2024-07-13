@@ -65,6 +65,7 @@ class PlexProvider:
 
     def get_user_collection(self) -> List[Dict[str, str]]:
         try:
+            logger.info(f"Fetching user library form: {self.library_name}")
             # Get the specified library
             library = self.server.library.section(self.library_name)
 

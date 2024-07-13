@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
+from models.movie import MediaType
 from src.indexer.torrentio import Torrentio
 from src.models.release import Release
 
@@ -29,7 +30,9 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt1234567", "movie", "Movie Title")
+        releases = self.torrentio.find_releases(
+            "tt1234567", MediaType.MOVIE, "Movie Title"
+        )
 
         # Assert the results
         self.assertEqual(len(releases), 2)
@@ -69,7 +72,7 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt9876543", "show", "TV Show")
+        releases = self.torrentio.find_releases("tt9876543", MediaType.SHOW, "TV Show")
 
         # Assert the results
         self.assertEqual(len(releases), 1)
@@ -103,7 +106,9 @@ class TestTorrentio(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # Test the find_releases method
-        releases = self.torrentio.find_releases("tt9876543", "episode", "TV Show")
+        releases = self.torrentio.find_releases(
+            "tt9876543", MediaType.EPISODE, "TV Show"
+        )
 
         # Assert the results
         self.assertEqual(len(releases), 1)
@@ -130,16 +135,11 @@ class TestTorrentio(unittest.TestCase):
 
         # Test the find_releases method
         releases = self.torrentio.find_releases(
-            "tt0000000", "movie", "Non-existent Movie"
+            "tt0000000", MediaType.MOVIE, "Non-existent Movie"
         )
 
         # Assert that an empty list is returned
         self.assertEqual(releases, [])
-
-    def test_find_releases_invalid_media_type(self):
-        # Test with an invalid media type
-        with self.assertRaises(ValueError):
-            self.torrentio.find_releases("tt1234567", "invalid_type", "Invalid Title")
 
     def test_parse_title(self):
         # Test the _parse_title method

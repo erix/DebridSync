@@ -1,9 +1,10 @@
-from typing import List, Literal, Dict, Any
+from typing import List, Dict, Any
 import re
 import requests
 import logging
 
 from models.release import Release
+from models.movie import MediaType
 
 from icecream import ic
 
@@ -15,14 +16,14 @@ class Torrentio:
         self.base_url = "https://torrentio.strem.fun/sort=qualitysize&qualityfilter=480p,scr,cam/stream/"
 
     def find_releases(
-        self, imdb_id: str, media_type: Literal["movie", "show", "episode"], title: str
+        self, imdb_id: str, media_type: MediaType, title: str
     ) -> List[Release]:
         """
         Find releases for a given IMDb ID and media type using Torrentio.
 
         Args:
             imdb_id (str): The IMDb ID of the movie, TV show, or episode.
-            media_type (Literal['movie', 'show', 'episode']): The type of media, either 'movie', 'show', or 'episode'.
+            media_type (MediaType): The type of media (MOVIE, SHOW, or EPISODE).
             title (str): The title of the movie or show.
 
         Returns:
@@ -31,9 +32,9 @@ class Torrentio:
         Raises:
             ValueError: If an invalid media_type is provided.
         """
-        if media_type not in ["movie", "show", "episode"]:
+        if media_type not in [MediaType.MOVIE, MediaType.SHOW, MediaType.EPISODE]:
             raise ValueError(
-                "Invalid media_type. Must be 'movie', 'show', or 'episode'."
+                f"Invalid media_type: {media_type}. Must be MediaType.MOVIE, MediaType.SHOW, or MediaType.EPISODE."
             )
 
         url = self._get_url(imdb_id, media_type)
@@ -52,13 +53,15 @@ class Torrentio:
             releases.append(release)
         return releases
 
-    def _get_url(self, imdb_id: str, media_type: str) -> str:
-        if media_type == "movie":
+    def _get_url(self, imdb_id: str, media_type: MediaType) -> str:
+        if media_type == MediaType.MOVIE:
             return f"{self.base_url}movie/{imdb_id}.json"
-        elif media_type == "show":
+        elif media_type == MediaType.SHOW:
             return f"{self.base_url}series/{imdb_id}:1:1.json"
-        else:  # episode
+        elif media_type == MediaType.EPISODE:
             return f"{self.base_url}series/{imdb_id}.json"
+        else:
+            raise ValueError(f"Unsupported media_type: {media_type}")
 
     def _parse_title(self, title: str) -> Dict[str, Any]:
         title_parts = title.split("\n")

@@ -1,10 +1,11 @@
-from typing import Dict, List, Literal, Protocol
+from typing import Dict, List, Protocol
+from models.movie import MediaType
 from models.release import Release
 
 
 class Indexer(Protocol):
     def find_releases(
-        self, imdb_id: str, media_type: Literal["movie", "show", "episode"], title: str
+        self, imdb_id: str, media_type: MediaType, title: str
     ) -> List[Release]: ...
 
 
@@ -26,7 +27,7 @@ class IndexerManager:
         self,
         name: str,
         imdb_id: str,
-        media_type: Literal["movie", "show", "episode"],
+        media_type: MediaType,
         title: str,
     ):
         return self.get_indexer(name).find_releases(imdb_id, media_type, title)
