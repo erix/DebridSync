@@ -7,10 +7,6 @@ class ContentProvider(Protocol):
 
     def remove_from_watchlist(self, item: Dict[str, str]) -> bool: ...
 
-    def get_user_collection(self) -> List[Dict[str, str]]: ...
-
-    def get_user_ratings(self) -> List[Dict[str, str]]: ...
-
 
 class ContentManager:
     def __init__(self):

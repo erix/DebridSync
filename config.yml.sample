@@ -6,6 +6,8 @@ content_providers:
   plex:
     enabled: false
     token: YOUR_PLEX_SERVER_TOKEN_HERE
+    server_url: YOUR_PLEX_SERVER_URL_HERE
+    library_name: Movies
 
 # Indexers
 indexers:

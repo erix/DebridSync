@@ -26,10 +26,11 @@ content_providers:
   plex:
     enabled: false
     token: YOUR_PLEX_SERVER_TOKEN_HERE
+    server_url: YOUR_PLEX_SERVER_URL_HERE
+    library_name: Movies
 
-
-# Release Finders
-release_finders:
+# Indexers
+indexers:
   torrentio:
     enabled: true
     # Add any Torrentio-specific settings here if needed
@@ -56,6 +57,7 @@ ranking_model:
   hdr: 100
   # Add more attributes and scores as needed
 
+
 # Logging
 logging:
   level: INFO
@@ -64,6 +66,11 @@ logging:
 # Developer Options
 developer:
   dry_run: false
+
+# Watchlist Management
+watchlist:
+  remove_after_adding: false
+  check_interval: 3600  # Check for new items every hour (in seconds)
 ```
 
 Create a `.env` file in the project root with the following content:

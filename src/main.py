@@ -56,11 +56,15 @@ def initialize_content_providers(config, env_vars):
                     client_secret=env_vars["TRAKT_CLIENT_SECRET"],
                 )
                 content_manager.add_provider("Trakt", trakt_provider)
-                collection_manager.add_provider("Trakt", trakt_provider)
+                # collection_manager.add_provider("Trakt", trakt_provider)
             elif provider == "plex":
-                plex_provider = PlexProvider(token=settings["token"])
+                plex_provider = PlexProvider(
+                    token=settings["token"],
+                    server_url=settings["server_url"],
+                    library_name=settings["library_name"],
+                )
                 content_manager.add_provider("Plex", plex_provider)
-                # collection_manager.add_provider("Plex", plex_provider)
+                collection_manager.add_provider("Plex", plex_provider)
     return content_manager, collection_manager
 
 
