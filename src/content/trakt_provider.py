@@ -224,7 +224,7 @@ class TraktProvider:
             else:
                 logger.info(f"No release date available for {movie.title}")
                 return False
-        except exceptions.RequestFailedError as e:
+        except trakt.core.exceptions.RequestFailedError as e:
             logger.error(f"Error checking release status for {movie.title}: {e}")
             return False
         except Exception as e:
