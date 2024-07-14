@@ -212,29 +212,33 @@ class TraktProvider:
     def check_released(self, movie: Movie) -> bool:
         try:
             logger.info(f"Checking release status for: {movie.title}")
-            trakt_movie = trakt.Trakt["movies"].get(movie.imdb_id, extended="full")
 
-            # Check if the movie has been released digitally or physically
-            if trakt_movie.released:
-                current_date = datetime.now().date()
+            response = trakt.Trakt.http.get(f"movies/{movie.imdb_id}/releases/us")
+            if response.ok:
+                release_data = response.json()
+                today = datetime.now().date()
+                digital_released = False
+                physical_released = False
 
-                if current_date >= trakt_movie.released:
-                    logger.info(f"{movie.title} has been released.")
-                    return True
-                else:
+                for release in release_data:
+                    release_date = datetime.strptime(
+                        release["release_date"], "%Y-%m-%d"
+                    ).date()
+                    if release_date <= today:
+                        if release["release_type"] == "digital":
+                            logger.info(f"{movie.title} has been digitally released.")
+                            digital_released = True
+                        elif release["release_type"] == "physical":
+                            logger.info(f"{movie.title} has been physically released.")
+                            physical_released = True
+
+                if not digital_released and not physical_released:
                     logger.info(f"{movie.title} has not been released yet.")
-                    return False
-            else:
-                logger.info(f"No release date available for {movie.title}")
-                return False
-        except trakt.core.exceptions.RequestFailedError as e:
-            logger.error(f"Error checking release status for {movie.title}: {e}")
-            return False
+
+                return digital_released or physical_released
         except Exception as e:
-            logger.error(
-                f"Unexpected error checking release status for {movie.title}: {e}"
-            )
-            return False
+            logger.error(f"Error fetching movie release data: {e}")
+            return True
 
     def _on_aborted(self):
         """Device authentication aborted.
