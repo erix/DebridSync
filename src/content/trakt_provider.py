@@ -105,11 +105,9 @@ class TraktProvider:
     def get_watchlist(self) -> List[Movie]:
         try:
             logger.info("Getting watchlist for erix...")
-            watchlist = trakt.Trakt["users/*/watchlist"].get(
-                username="erix", extended="full"
-            )
+            watchlist = trakt.Trakt["users/me/watchlist"].get(extended="full")
 
-            return [
+            retval = [
                 Movie(
                     title=item.title,
                     year=str(item.year) if hasattr(item, "year") else "",
@@ -118,14 +116,13 @@ class TraktProvider:
                 )
                 for item in watchlist
             ]
+            return retval
         except trakt.core.exceptions.RequestFailedError as e:
             if e.response.status_code == 401:  # Unauthorized, token might be expired
                 logger.info("Token expired. Refreshing...")
                 self._refresh_token()
                 # Retry after refreshing
-                watchlist = trakt.Trakt["users/*/watchlist"].get(
-                    username="erix", extended="full"
-                )
+                watchlist = trakt.Trakt["users/me/watchlist"].get(extended="full")
                 return [
                     Movie(
                         title=item.title,
@@ -215,16 +212,13 @@ class TraktProvider:
     def check_released(self, movie: Movie) -> bool:
         try:
             logger.info(f"Checking release status for: {movie.title}")
-            trakt_movie = trakt.Trakt["movies"].get(movie.imdb_id)
+            trakt_movie = trakt.Trakt["movies"].get(movie.imdb_id, extended="full")
 
             # Check if the movie has been released digitally or physically
             if trakt_movie.released:
                 current_date = datetime.now().date()
-                release_date = datetime.strptime(
-                    trakt_movie.released, "%Y-%m-%d"
-                ).date()
 
-                if current_date >= release_date:
+                if current_date >= trakt_movie.released:
                     logger.info(f"{movie.title} has been released.")
                     return True
                 else:

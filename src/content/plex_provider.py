@@ -22,7 +22,6 @@ class PlexProvider:
     def get_watchlist(self) -> List[Movie]:
         try:
             watchlist = self.account.watchlist(libtype="movie")
-            ic(watchlist)
             return [
                 Movie(
                     title=item.title,
