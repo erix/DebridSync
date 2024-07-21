@@ -19,6 +19,9 @@ from models.movie import Movie
 
 logger = logging.getLogger(__name__)
 
+# Global variable to store processed movies
+processed_movies = []
+
 
 def load_config():
     with open("config.yml", "r") as config_file:
@@ -89,7 +92,10 @@ def initialize_indexers(config):
 
 
 def is_item_processed(item: Movie, user_collection):
-    return any(movie["imdb_id"] == item.imdb_id for movie in user_collection)
+    global processed_movies
+    return any(movie["imdb_id"] == item.imdb_id for movie in user_collection) or any(
+        movie.imdb_id == item.imdb_id for movie in processed_movies
+    )
 
 
 def process_watchlist_item(
@@ -100,6 +106,7 @@ def process_watchlist_item(
     trakt,
     rtn,
 ):
+    global processed_movies
     imdb_id = item.imdb_id
     media_type = item.media_type
     title = item.title
@@ -144,6 +151,9 @@ def process_watchlist_item(
                 f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers}) (Rank: {release.rank})"
             )
             success = add_torrent_to_real_debrid(release, real_debrid, dry_run)
+            if success:
+                processed_movies.append(item)
+
             break  # Only process the first filtered release
     else:
         logger.info(f"No releases found for {title}")
@@ -196,6 +206,8 @@ def process_all_watchlists(
                 trakt,
                 rtn,
             )
+        else:
+            logger.debug(f"Skipping already processed item: {item.title}")
 
 
 def main():
