@@ -54,13 +54,13 @@ class TraktProvider:
 
     def _device_auth(self):
         if not self.is_authenticating.acquire(blocking=False):
-            print("Authentication has already been started")
+            logger.debug("Authentication has already been started")
             return False
 
         # Request new device code
         code = trakt.Trakt["oauth/device"].code()
 
-        print(
+        logger.info(
             f"Please go to {code['verification_url']} and enter the code: {code['user_code']}"
         )
 
@@ -96,7 +96,7 @@ class TraktProvider:
             )
 
         except Exception as e:
-            print(f"Error refreshing token: {e}")
+            logger.error(f"Error refreshing token: {e}")
             # If refresh fails, we might need to re-authenticate
             os.remove(self.token_file)
             self._device_auth()
@@ -212,7 +212,7 @@ class TraktProvider:
 
             if media_type == "movie":
                 logger.debug(f"Delete movie from watchlist:{item['title']}")
-                print(
+                logger.debug(
                     trakt.Trakt["sync/watchlist"].remove(
                         {"movies": [{"ids": {"imdb": imdb_id}}]}
                     )
@@ -292,7 +292,7 @@ class TraktProvider:
         or via the "poll" event)
         """
 
-        print("Authentication aborted")
+        logger.debug("Authentication aborted")
 
         # Authentication aborted
         self.is_authenticating.acquire()
@@ -311,8 +311,11 @@ class TraktProvider:
 
         # Store authorization for future calls
         self.authorization = authorization
+        trakt.Trakt.configuration.defaults.oauth.from_response(self.authorization)
 
-        print("Authentication successful - authorization: %r" % self.authorization)
+        logger.info(
+            "Authentication successful - authorization: %r" % self.authorization
+        )
 
         # Authentication complete
         self.is_authenticating.notify_all()
@@ -322,7 +325,7 @@ class TraktProvider:
     def _on_expired(self):
         """Device authentication expired."""
 
-        print("Authentication expired")
+        logger.debug("Authentication expired")
 
         # Authentication expired
         self.is_authenticating.acquire()
@@ -343,7 +346,7 @@ class TraktProvider:
         # OAuth token refreshed, store authorization for future calls
         self.authorization = authorization
 
-        print("Token refreshed - authorization: %r" % self.authorization)
+        logger.debug("Token refreshed - authorization: %r" % self.authorization)
 
     def _save_token(self):
         with open(self.token_file, "w") as f:

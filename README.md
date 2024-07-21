@@ -95,11 +95,27 @@ TRAKT_CLIENT_SECRET=your_trakt_client_secret
 
 ## Usage
 
-To run the application:
+### Running locally
+
+To run the application locally:
 
 ```
 python src/main.py
 ```
+
+### Running with Docker
+
+1. Build the Docker image:
+   ```
+   docker build -t debridsync .
+   ```
+
+2. Run the Docker container:
+   ```
+   docker run -v $(pwd)/config.yml:/app/config.yml -v $(pwd)/.env:/app/.env debridsync
+   ```
+
+This will run the DebridSync application in a Docker container, using the `config.yml` and `.env` files from your local directory.
 
 ## Developer Setup
 
