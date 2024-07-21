@@ -7,8 +7,15 @@ class MediaType(Enum):
     EPISODE = auto()
     UNKNOWN = auto()
 
-@dataclass
+@dataclass(frozen=True)
 class Movie:
+    def __hash__(self):
+        return hash((self.title, self.year, self.imdb_id, self.media_type))
+
+    def __eq__(self, other):
+        if not isinstance(other, Movie):
+            return NotImplemented
+        return (self.title, self.year, self.imdb_id, self.media_type) == (other.title, other.year, other.imdb_id, other.media_type)
     title: str
     year: str
     imdb_id: str

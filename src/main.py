@@ -45,44 +45,35 @@ def setup_logging(config):
 
 
 def initialize_content_providers(config, trakt):
-    content_manager = ContentManager()
+    content_manager = ContentManager(config)
     collection_manager = CollectionManager()
     media_library = config.get("media_library", {})
-    watchlists = config.get("watchlists", [])
+    watchlists = config.get("watchlists", {})
     plex_provider = None
 
-    plex_libraries = media_library.get(
-        "plex_libraries",
-    )
+    plex_libraries = media_library.get("plex_libraries", [])
 
     plex_config = config.get("plex", {})
     if plex_config:
         plex_provider = PlexProvider(
             token=plex_config.get("token"),
             server_url=plex_config.get("server_url"),
-            library_name=plex_libraries[0],  # TODO: Use the first library as default
+            library_name=plex_libraries[0] if plex_libraries else None,
         )
 
-    if "trakt_watchlist" in watchlists:
-        logger.info("Added Trakt watchlist")
-        content_manager.add_provider("Trakt", trakt)
+    if "trakt" in watchlists:
+        logger.info("Added Trakt provider")
+        content_manager.add_provider("trakt", trakt)
 
-    if "plex_watchlist" in watchlists and plex_provider:
-        logger.info("Added Plex watchlist")
-        content_manager.add_provider("Plex", plex_provider)
+    if "plex" in watchlists and plex_provider:
+        logger.info("Added Plex provider")
+        content_manager.add_provider("plex", plex_provider)
 
     if media_library.get("trakt_collection", False):
         collection_manager.add_provider("Trakt", trakt)
 
     if plex_libraries and plex_provider:
         collection_manager.add_provider("Plex", plex_provider)
-
-    # if media_library.get("real_debrid", False):
-    #     real_debrid_config = config.get("real_debrid", {})
-    #     real_debrid_provider = RealDebridProvider(
-    #         api_token=real_debrid_config.get("api_token"),
-    #     )
-    #     collection_manager.add_provider("RealDebrid", real_debrid_provider
 
     return content_manager, collection_manager
 
@@ -200,25 +191,19 @@ def process_all_watchlists(
     all_watchlists = content_manager.get_all_watchlists()
     user_collections = collection_manager.get_user_collections()
 
-    for provider, watchlist in all_watchlists.items():
-        if not watchlist:
-            logger.info(f"Empty watchilst for {provider}")
-            continue
-        logger.info(f"Checking for new items in {provider} watchlist")
-        content_provider = content_manager.get_provider(provider)
-        for item in watchlist:
-            if not is_item_processed(item, user_collections["Plex"]):
-                logger.info(f"Processing new item: {item.title}")
-                process_watchlist_item(
-                    item,
-                    indexer_manager,
-                    real_debrid,
-                    dry_run,
-                    remove_after_adding,
-                    content_provider,
-                    trakt,
-                    rtn,
-                )
+    for item in all_watchlists:
+        if not is_item_processed(item, user_collections["Plex"]):
+            logger.info(f"Processing new item: {item.title}")
+            process_watchlist_item(
+                item,
+                indexer_manager,
+                real_debrid,
+                dry_run,
+                remove_after_adding,
+                content_manager.get_provider("trakt"),  # Assuming Trakt as the main provider
+                trakt,
+                rtn,
+            )
 
 
 def main():
@@ -240,6 +225,7 @@ def main():
         client_id=env_vars["TRAKT_CLIENT_ID"],
         client_secret=env_vars["TRAKT_CLIENT_SECRET"],
     )
+
     content_manager, collection_manager = initialize_content_providers(config, trakt)
     indexer_manager = initialize_indexers(config)
 

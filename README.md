@@ -20,9 +20,16 @@ The application uses a YAML configuration file (`config.yml`) and environment va
 ```yaml
 # Watchlists
 watchlists:
-  - trakt_watchlist
-  - plex_watchlist
-  - https://trakt.tv/users/username/lists/listname
+    trakt:
+        user:
+            - watchlist
+            - collection
+            - favorites
+        public:
+            - user1/list-id-1
+            - user2/list-id-2
+    plex:
+        - watchlist
 
 
 # Media Library
