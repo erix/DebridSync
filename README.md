@@ -112,7 +112,7 @@ python src/main.py
 
 2. Run the Docker container:
    ```
-   docker run -v $(pwd)/config.yml:/app/config.yml -v $(pwd)/.env:/app/.env debridsync
+   docker run -v $(pwd):/app debridsync
    ```
 
 This will run the DebridSync application in a Docker container, using the `config.yml` and `.env` files from your local directory.
