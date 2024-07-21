@@ -104,7 +104,7 @@ class TraktProvider:
     @require_auth
     def get_watchlist(self) -> List[Movie]:
         try:
-            logger.info("Getting watchlist for erix...")
+            logger.info("Getting own watchlist...")
             watchlist = trakt.Trakt["users/me/watchlist"].get(extended="full")
 
             retval = [
@@ -137,6 +137,51 @@ class TraktProvider:
             else:
                 logger.error(f"Error fetching Trakt watchlist: {e}")
                 return []
+        except Exception as e:
+            logger.error(f"Unexpected error fetching Trakt watchlist: {e}")
+            return []
+
+    @require_auth
+    def get_own_list(self, list_name: str) -> List[Movie]:
+        try:
+            logger.info(f"Getting {list_name} list...")
+            watchlist = trakt.Trakt[f"users/me/lists/{list_name}"].get()
+            if not watchlist.items():
+                logger.debug(f"Empty list {list_name}")
+                return []
+
+            retval = [
+                Movie(
+                    title=item.title,
+                    year=str(item.year) if hasattr(item, "year") else "",
+                    imdb_id=item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    media_type=MediaType(self._get_media_type(item)),
+                )
+                for item in watchlist.items()
+            ]
+            return retval
+        except Exception as e:
+            logger.error(f"Unexpected error fetching Trakt watchlist: {e}")
+            return []
+
+    def get_user_list(self, list_name: str) -> List[Movie]:
+        try:
+            logger.info(f"Getting {list_name} ...")
+            watchlist = trakt.Trakt[f"users/{list_name}"].get()
+            if not watchlist.items():
+                logger.debug(f"Empty list {list_name}")
+                return []
+
+            retval = [
+                Movie(
+                    title=item.title,
+                    year=str(item.year) if hasattr(item, "year") else "",
+                    imdb_id=item.get_key("imdb") if hasattr(item, "get_key") else "",
+                    media_type=MediaType(self._get_media_type(item)),
+                )
+                for item in watchlist.items()
+            ]
+            return retval
         except Exception as e:
             logger.error(f"Unexpected error fetching Trakt watchlist: {e}")
             return []
