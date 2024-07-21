@@ -63,5 +63,4 @@ developer:
 
 # Watchlist Management
 watchlist:
-  remove_after_adding: false
   check_interval: 3600  # Check for new items every hour (in seconds)

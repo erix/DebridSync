@@ -97,8 +97,6 @@ def process_watchlist_item(
     indexer_manager,
     real_debrid,
     dry_run,
-    remove_after_adding,
-    content_provider,
     trakt,
     rtn,
 ):
@@ -146,9 +144,6 @@ def process_watchlist_item(
                 f"  - {release.title} (Hash: {release.infoHash}) (Size: {release.size_in_gb:.2f}GB) (Peers: {release.peers}) (Rank: {release.rank})"
             )
             success = add_torrent_to_real_debrid(release, real_debrid, dry_run)
-            if success and remove_after_adding and not dry_run:
-                content_provider.remove_from_watchlist(item)
-                logger.info(f"Removed {title} from watchlist")
             break  # Only process the first filtered release
     else:
         logger.info(f"No releases found for {title}")
@@ -184,7 +179,6 @@ def process_all_watchlists(
     indexer_manager,
     real_debrid,
     dry_run,
-    remove_after_adding,
     trakt,
     rtn,
 ):
@@ -199,8 +193,6 @@ def process_all_watchlists(
                 indexer_manager,
                 real_debrid,
                 dry_run,
-                remove_after_adding,
-                content_manager.get_provider("trakt"),  # Assuming Trakt as the main provider
                 trakt,
                 rtn,
             )
@@ -215,11 +207,8 @@ def main():
     logger.info(yaml.dump(config, default_flow_style=False))
 
     dry_run = config.get("developer", {}).get("dry_run", False)
-    remove_after_adding = config.get("watchlist", {}).get("remove_after_adding", False)
     if dry_run:
-        logger.info(
-            "Running in dry run mode. No changes will be made to Real-Debrid or watchlists."
-        )
+        logger.info("Running in dry run mode. No changes will be made to Real-Debrid.")
 
     trakt = TraktProvider(
         client_id=env_vars["TRAKT_CLIENT_ID"],
@@ -266,7 +255,6 @@ def main():
         indexer_manager=indexer_manager,
         real_debrid=real_debrid,
         dry_run=dry_run,
-        remove_after_adding=remove_after_adding,
         trakt=trakt,
         rtn=rtn,
     )
